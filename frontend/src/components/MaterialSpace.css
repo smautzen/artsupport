@@ -1,0 +1,32 @@
+/* MaterialSpace.css */
+.material-space {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  
+  .material-space h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  
+  .material-space ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .material-space li {
+    margin-bottom: 0.5rem;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .material-space li strong {
+    color: #007bff;
+  }
+  

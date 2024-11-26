@@ -1,26 +1,26 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
 import MaterialSpace from '../components/MaterialSpace';
-import ChatBox from '../components/ChatBox';
 import ConceptualSpace from '../components/ConceptualSpace';
-import './ProjectDetailsPage.css';
+import ChatBox from '../components/ChatBox';
 
-function ProjectDetailsPage() {
-  const { id: projectId } = useParams(); // Get project ID from the URL
+const ProjectDetailsPage = ({ projectId }) => {
+
+  // Log the projectId for debugging
+  console.log('ProjectDetailsPage: projectId =', projectId);
 
   return (
-    <div className="project-details-container">
-      <div className="material-space">
+    <div style={{ display: 'flex', gap: '1rem' }}>
+      <div style={{ flex: 1 }}>
         <MaterialSpace projectId={projectId} />
       </div>
-      <div className="chatbox">
+      <div style={{ flex: 2 }}>
         <ChatBox projectId={projectId} />
       </div>
-      <div className="conceptual-space">
+      <div style={{ flex: 1 }}>
         <ConceptualSpace projectId={projectId} />
       </div>
     </div>
   );
-}
+};
 
 export default ProjectDetailsPage;

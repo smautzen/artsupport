@@ -1,46 +1,56 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebase-config';
+import { collection, onSnapshot } from 'firebase/firestore';
+import './MaterialSpace.css'; // Import the CSS file
 
-function MaterialSpace({ projectId }) {
-  const [categories, setCategories] = useState([]);
+const MaterialSpace = ({ projectId }) => {
+  const [materials, setMaterials] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchMaterialSpace = async () => {
-      try {
-        const q = query(
-          collection(db, 'categories'),
-          where('type', '==', 'material space'),
-          where('projectId', '==', projectId)
-        );
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCategories(data);
-      } catch (error) {
-        console.error('Error fetching material space:', error);
-      }
-    };
+    if (!projectId) {
+      console.error('MaterialSpace: Missing projectId.');
+      setError('No project selected.');
+      return;
+    }
 
-    fetchMaterialSpace();
+    const materialRef = collection(db, 'projects', projectId, 'material');
+    const unsubscribe = onSnapshot(
+      materialRef,
+      (snapshot) => {
+        const materialData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMaterials(materialData);
+        setError(null); // Clear any previous errors
+      },
+      (err) => {
+        console.error('Error fetching material space:', err);
+        setError('Failed to fetch materials.');
+      }
+    );
+
+    return () => unsubscribe(); // Clean up the listener
   }, [projectId]);
 
   return (
-    <div>
+    <div className="material-space">
       <h2>Material Space</h2>
-      <ul>
-        {categories.map(category => (
-          <li key={category.id}>
-            <strong>{category.name}</strong>
-            <ul>
-              {category.subnodes?.map((subnode, index) => (
-                <li key={index}>{subnode}</li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {materials.length === 0 ? (
+        <p>No materials found. Start by adding new material data.</p>
+      ) : (
+        <ul>
+          {materials.map((material) => (
+            <li key={material.id}>
+              <strong>{material.title}</strong>: {material.description}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-}
+};
 
 export default MaterialSpace;

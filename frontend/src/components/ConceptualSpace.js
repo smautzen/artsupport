@@ -1,46 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebase-config';
+import { collection, onSnapshot } from 'firebase/firestore';
+import './ConceptualSpace.css'; // Import the CSS file
 
-function ConceptualSpace({ projectId }) {
-  const [categories, setCategories] = useState([]);
+const ConceptualSpace = ({ projectId }) => {
+  const [concepts, setConcepts] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchConceptualSpace = async () => {
-      try {
-        const q = query(
-          collection(db, 'categories'),
-          where('type', '==', 'conceptual space'),
-          where('projectId', '==', projectId)
-        );
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCategories(data);
-      } catch (error) {
-        console.error('Error fetching conceptual space:', error);
-      }
-    };
+    if (!projectId) {
+      console.error('ConceptualSpace: Missing projectId.');
+      setError('No project selected.');
+      return;
+    }
 
-    fetchConceptualSpace();
+    const conceptualRef = collection(db, 'projects', projectId, 'conceptual');
+    const unsubscribe = onSnapshot(
+      conceptualRef,
+      (snapshot) => {
+        const conceptualData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        console.log('Conceptual data fetched:', conceptualData);
+        setConcepts(conceptualData);
+        setError(null); // Clear previous errors
+      },
+      (err) => {
+        console.error('Error fetching conceptual space:', err);
+        setError('Failed to fetch conceptual data.');
+      }
+    );
+
+    return () => unsubscribe(); // Clean up the listener
   }, [projectId]);
 
   return (
-    <div>
+    <div className="conceptual-space">
       <h2>Conceptual Space</h2>
-      <ul>
-        {categories.map(category => (
-          <li key={category.id}>
-            <strong>{category.name}</strong>
-            <ul>
-              {category.subnodes?.map((subnode, index) => (
-                <li key={index}>{subnode}</li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+      {error && <p className="error">{error}</p>}
+      {concepts.length === 0 ? (
+        <p className="empty-state">No concepts added yet. Start building your conceptual space!</p>
+      ) : (
+        <ul className="conceptual-list">
+          {concepts.map((concept) => (
+            <li key={concept.id} className="concept-item">
+              <strong>{concept.title}</strong>: {concept.description}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-}
+};
 
 export default ConceptualSpace;
