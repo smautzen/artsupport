@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './ProjectForm.css';
 
 function ProjectForm({ onAdd }) {
   const [name, setName] = useState('');
@@ -10,23 +11,23 @@ function ProjectForm({ onAdd }) {
       onAdd({ name, description });
       setName('');
       setDescription('');
-    } else {
-      alert('Please fill out both fields.');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="project-form" onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Project Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        required
       />
       <textarea
         placeholder="Project Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
+        required
       />
       <button type="submit">Add Project</button>
     </form>

@@ -1,16 +1,22 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import './ProjectList.css'; // Add styles for the list
 
 function ProjectList({ projects, onDelete }) {
   return (
-    <ul>
+    <div className="project-list">
       {projects.map((project) => (
-        <li key={project.id}>
-          <h3>{project.name}</h3>
+        <div key={project.id} className="project-card">
+          <Link to={`/projects/${project.id}`} className="project-name">
+            <h3>{project.name}</h3>
+          </Link>
           <p>{project.description}</p>
-          <button onClick={() => onDelete(project.id)}>Delete</button>
-        </li>
+          <button onClick={() => onDelete(project.id)} className="delete-button">
+            Delete
+          </button>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 

@@ -1,0 +1,31 @@
+.project-details-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+  
+  .material-space, .conceptual-space, .chatbox {
+    border: 1px solid #ccc;
+    padding: 16px;
+    border-radius: 8px;
+  }
+  
+  .chatbox-messages {
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid #ddd;
+  }
+  
+  .chat-message.user {
+    text-align: right;
+    color: blue;
+  }
+  
+  .chat-message.assistant {
+    text-align: left;
+    color: green;
+  }
+  

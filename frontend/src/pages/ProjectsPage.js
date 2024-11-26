@@ -3,12 +3,11 @@ import axios from 'axios';
 import useRealtimeProjects from '../components/useRealtimeProjects';
 import ProjectList from '../components/ProjectList';
 import ProjectForm from '../components/ProjectForm';
+import './ProjectsPage.css';
 
 function ProjectsPage() {
-  // Use Firestore listener for real-time updates
   const projects = useRealtimeProjects();
 
-  // Add project via backend REST API
   const handleAddProject = async (project) => {
     try {
       await axios.post('http://localhost:4000/projects', project);
@@ -17,7 +16,6 @@ function ProjectsPage() {
     }
   };
 
-  // Delete project via backend REST API
   const handleDeleteProject = async (id) => {
     try {
       await axios.delete(`http://localhost:4000/projects/${id}`);
@@ -27,12 +25,16 @@ function ProjectsPage() {
   };
 
   return (
-    <div>
-      <h1>Projects</h1>
-      {/* Form to add projects */}
-      <ProjectForm onAdd={handleAddProject} />
-      {/* List of projects with delete functionality */}
-      <ProjectList projects={projects} onDelete={handleDeleteProject} />
+    <div className="projects-page-container">
+      <div className="sidebar">
+        <header className="add-project-container">
+          <h2>Add a New Project</h2>
+          <ProjectForm onAdd={handleAddProject} />
+        </header>
+        <main className="project-list-container">
+          <ProjectList projects={projects} onDelete={handleDeleteProject} />
+        </main>
+      </div>
     </div>
   );
 }

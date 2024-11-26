@@ -1,0 +1,32 @@
+.projects-page-container {
+  display: flex;
+  padding: 16px;
+  font-family: Arial, sans-serif;
+}
+
+.sidebar {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.add-project-container {
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-project-container h2 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.project-list-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
