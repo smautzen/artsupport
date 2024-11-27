@@ -8,9 +8,13 @@ import './ProjectsPage.css';
 function ProjectsPage() {
   const projects = useRealtimeProjects();
 
-  const handleAddProject = async (project) => {
+  const handleAddProject = async (project, includeSampleData = true) => {
     try {
-      await axios.post('http://localhost:4000/projects', project);
+      console.log('Sending request to add project:', { ...project, includeSampleData }); // Debug log
+      await axios.post('http://localhost:4000/projects', {
+        ...project,
+        includeSampleData,
+      });
     } catch (error) {
       console.error('Error adding project:', error);
     }
@@ -29,7 +33,10 @@ function ProjectsPage() {
       <div className="sidebar">
         <header className="add-project-container">
           <h2>Add a New Project</h2>
-          <ProjectForm onAdd={handleAddProject} />
+          <ProjectForm
+            onAdd={(project) => handleAddProject(project, true)}
+            onAddEmpty={(project) => handleAddProject(project, false)}
+          />
         </header>
         <main className="project-list-container">
           <ProjectList projects={projects} onDelete={handleDeleteProject} />

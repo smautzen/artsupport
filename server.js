@@ -19,12 +19,13 @@ const db = admin.firestore();
 
 app.post('/projects', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, includeSampleData } = req.body;
 
-    // Configurable parameters
-    const numCategories = 2; // Number of categories
-    const numNodesPerCategory = 2; // Number of nodes per category
-    const numChildNodesPerNode = 2; // Number of child nodes per node
+    console.log('Request received to create project:', {
+      name,
+      description,
+      includeSampleData,
+    }); // Debug log
 
     // Add the project document
     const projectRef = await db.collection('projects').add({
@@ -33,60 +34,66 @@ app.post('/projects', async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    // Initialize subcollections
     const projectId = projectRef.id;
 
-    // Initialize chat collection with a placeholder message
+    // Initialize subcollections
     const chatRef = db.collection('projects').doc(projectId).collection('chat');
-    await chatRef.add({
-      messageType: 'system',
-      content: 'Welcome to the chat!',
-      timestamp: new Date().toISOString(),
-      linkedNodes: [],
-    });
+    const materialRef = db.collection('projects').doc(projectId).collection('material');
+    const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
 
-    // Helper function to generate sample titles and descriptions
-    const generateSampleData = (type, index) => ({
-      title: `${type} ${index + 1}`,
-      description: `This is a description for ${type} ${index + 1}.`,
-    });
+    console.log('includeSampleData flag:', includeSampleData); // Debug log
+    if (includeSampleData) {
+      console.log('Adding sample data...'); // Debug log
+      await chatRef.add({
+        messageType: 'system',
+        content: 'Welcome to the chat!',
+        timestamp: new Date().toISOString(),
+        linkedNodes: [],
+      });
 
-    // Helper function to create categories and nodes
-    const createCategoriesAndNodes = async (collectionRef, categoryType) => {
-      for (let i = 0; i < numCategories; i++) {
-        const category = generateSampleData(`${categoryType} Category`, i);
-        const categoryRef = await collectionRef.add({
-          title: category.title,
-          description: category.description,
-          createdAt: new Date().toISOString(),
-        });
+      const generateSampleData = (type, index) => ({
+        title: `${type} ${index + 1}`,
+        description: `This is a description for ${type} ${index + 1}.`,
+      });
 
-        const nodeRef = categoryRef.collection('nodes');
-        for (let j = 0; j < numNodesPerCategory; j++) {
-          const node = generateSampleData(`${categoryType} Node`, j);
-          const nodeDoc = await nodeRef.add({
-            title: node.title,
-            description: node.description,
+      const createCategoriesAndNodes = async (collectionRef, categoryType) => {
+        const numCategories = 2;
+        const numNodesPerCategory = 2;
+        const numChildNodesPerNode = 2;
+
+        for (let i = 0; i < numCategories; i++) {
+          const category = generateSampleData(`${categoryType} Category`, i);
+          const categoryRef = await collectionRef.add({
+            title: category.title,
+            description: category.description,
+            createdAt: new Date().toISOString(),
           });
 
-          const childNodeRef = nodeDoc.collection('childNodes');
-          for (let k = 0; k < numChildNodesPerNode; k++) {
-            const childNode = generateSampleData(`${categoryType} Child Node`, k);
-            await childNodeRef.add({
-              title: childNode.title,
-              description: childNode.description,
+          const nodeRef = categoryRef.collection('nodes');
+          for (let j = 0; j < numNodesPerCategory; j++) {
+            const node = generateSampleData(`${categoryType} Node`, j);
+            const nodeDoc = await nodeRef.add({
+              title: node.title,
+              description: node.description,
             });
+
+            const childNodeRef = nodeDoc.collection('childNodes');
+            for (let k = 0; k < numChildNodesPerNode; k++) {
+              const childNode = generateSampleData(`${categoryType} Child Node`, k);
+              await childNodeRef.add({
+                title: childNode.title,
+                description: childNode.description,
+              });
+            }
           }
         }
-      }
-    };
+      };
 
-    // Initialize material and conceptual collections
-    const materialRef = db.collection('projects').doc(projectId).collection('material');
-    await createCategoriesAndNodes(materialRef, 'Material');
-
-    const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
-    await createCategoriesAndNodes(conceptualRef, 'Conceptual');
+      await createCategoriesAndNodes(materialRef, 'Material');
+      await createCategoriesAndNodes(conceptualRef, 'Conceptual');
+    } else {
+      console.log('Creating project without sample data'); // Debug log
+    }
 
     res.status(201).send({ id: projectId });
   } catch (error) {
@@ -94,6 +101,8 @@ app.post('/projects', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
+
 
 
 // Fetch all projects

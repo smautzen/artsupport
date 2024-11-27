@@ -1,36 +1,43 @@
 import React, { useState } from 'react';
-import './ProjectForm.css';
 
-function ProjectForm({ onAdd }) {
+function ProjectForm({ onAdd, onAddEmpty }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (name.trim() && description.trim()) {
-      onAdd({ name, description });
-      setName('');
-      setDescription('');
-    }
+  const handleAddWithSampleData = () => {
+    const project = { name, description };
+    console.log('Adding project with sample data:', project); // Debug log
+    onAdd(project);
+    setName('');
+    setDescription('');
+  };
+
+  const handleAddEmpty = () => {
+    const project = { name, description };
+    console.log('Adding empty project:', project); // Debug log
+    onAddEmpty(project);
+    setName('');
+    setDescription('');
   };
 
   return (
-    <form className="project-form" onSubmit={handleSubmit}>
+    <div className="project-form">
       <input
         type="text"
         placeholder="Project Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        required
       />
       <textarea
         placeholder="Project Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        required
       />
-      <button type="submit">Add Project</button>
-    </form>
+      <div className="buttons-container">
+        <button onClick={handleAddWithSampleData}>Add with Sample Data</button>
+        <button onClick={handleAddEmpty}>Add Empty</button>
+      </div>
+    </div>
   );
 }
 
