@@ -3,7 +3,7 @@ import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
 
-const NodeTree = ({ projectId, space }) => {
+const NodeTree = ({ projectId, space, onNodeClick }) => {
   const [categories, setCategories] = useState([]);
   const [nodes, setNodes] = useState({});
   const [collapsedCategories, setCollapsedCategories] = useState({});
@@ -93,7 +93,11 @@ const NodeTree = ({ projectId, space }) => {
                 <div className="category-content">
                   {nodes[category.id] &&
                     nodes[category.id].map((node) => (
-                      <div key={node.id} className="node">
+                      <div
+                        key={node.id}
+                        className="node"
+                        onClick={() => onNodeClick(node)} // Trigger onNodeClick with the clicked node
+                      >
                         {node.title}
                       </div>
                     ))}
