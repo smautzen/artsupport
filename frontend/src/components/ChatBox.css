@@ -1,80 +1,104 @@
-/* ChatBox.css */
-
 .chatbox {
-    padding: 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    height: 400px;
-    max-width: 100%;
-  }
-  
-  .chatbox h2 {
-    font-size: 1.5rem;
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  .chatbox-messages {
-    flex-grow: 1;
-    overflow-y: auto;
-    background-color: #fff;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-  
-  .chat-message {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 15px;
-    max-width: 75%;
-  }
-  
-  .chat-message.user {
-    background-color: #e0f7fa;
-    align-self: flex-end;
-    text-align: right;
-  }
-  
-  .chat-message.assistant {
-    background-color: #fbe9e7;
-    align-self: flex-start;
-  }
-  
-  .chat-message.system {
-    background-color: #eeeeee;
-    text-align: center;
-    font-style: italic;
-  }
-  
-  .chatbox-input {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .chatbox-input input {
-    flex-grow: 1;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  
-  .chatbox-input button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    background-color: #007bff;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-  
-  .chatbox-input button:hover {
-    background-color: #0056b3;
-  }
-  
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+  max-width: 100%;
+}
+
+.chatbox h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.chatbox-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: #fff;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Adds spacing between messages */
+}
+
+.chat-message {
+  position: relative; /* Allows positioning of the timestamp */
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 65%; /* Ensures messages never exceed 65% of the parent's width */
+  word-wrap: break-word; /* Breaks long words to prevent overflow */
+}
+
+.chat-message .timestamp {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.chat-message.user {
+  background-color: #e0f7fa;
+  align-self: flex-end; /* Aligns user messages to the right */
+  text-align: left;
+}
+
+.chat-message.user .timestamp {
+  text-align: right; /* Timestamp for user chats aligns to the right */
+}
+
+.chat-message.system {
+  background-color: #eeeeee;
+  align-self: flex-start; /* Aligns system messages to the left */
+  text-align: left;
+}
+
+.chat-message.system .timestamp {
+  text-align: left; /* Timestamp for system chats aligns to the left */
+}
+
+.chatbox-input {
+  display: flex;
+  gap: 10px;
+  height: 100px; /* Keeps the height consistent */
+}
+
+.chatbox-input textarea {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  resize: none; /* Prevents the user from resizing the textarea */
+  text-align: left; /* Ensures the text aligns to the left */
+  vertical-align: top; /* Ensures the text starts at the top */
+  overflow-y: auto; /* Adds scroll behavior if the content exceeds height */
+}
+
+
+.chatbox-input input {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.chatbox-input button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.chatbox-input button:hover {
+  background-color: #0056b3;
+}
