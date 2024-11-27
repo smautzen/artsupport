@@ -87,7 +87,7 @@ const NodeTree = ({ projectId, space }) => {
                     .flatMap((nodeGroup) =>
                       nodeGroup.nodes.map((node) => (
                         <li key={`${category.id}-${node.id}`}>
-                          <strong>{node.title}</strong>: {node.description}
+                          {node.title}
                         </li>
                       ))
                     )}
