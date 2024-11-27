@@ -1,85 +1,57 @@
+.node-tree {
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
 .tree {
-  --spacing: 1.5rem;
-  --radius: 10px;
+  padding: 0;
+  margin: 0;
 }
 
-.tree li {
-  display: block;
-  position: relative;
-  padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+.category {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
 }
 
-.tree ul {
-  margin-left: calc(var(--radius) - var(--spacing));
-  padding-left: 0;
+.category-header {
+  display: flex;
+  align-items: center;
 }
 
-.tree ul li {
-  border-left: 2px solid #ddd;
+.caret {
+  display: inline-block;
+  margin-right: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
 }
 
-.tree ul li:last-child {
-  border-color: transparent;
+.caret:hover {
+  color: #007bff; /* Highlight on hover */
 }
 
-.tree ul li::before {
-  content: '';
-  display: block;
-  position: absolute;
-  top: calc(var(--spacing) / -2);
-  left: -2px;
-  width: calc(var(--spacing) + 2px);
-  height: calc(var(--spacing) + 1px);
-  border: solid #ddd;
-  border-width: 0 0 2px 2px;
+.category-title {
+  font-weight: bold;
+  cursor: default; /* Prevent pointer events on title */
 }
 
-.tree summary {
-  display: block;
-  cursor: default; /* Disable toggling by text */
+.category-content {
+  margin-top: 10px;
+  padding-left: 20px;
+  display: block; /* Set display: none; for collapsed state */
 }
 
-.tree summary::marker,
-.tree summary::-webkit-details-marker {
-  display: none;
+.node {
+  margin: 5px 0;
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background-color: #fff;
 }
 
-.tree summary:focus {
-  outline: none;
-}
-
-.tree summary:focus-visible {
-  outline: 1px dotted #000;
-}
-
-.tree li::after,
-.tree summary::before {
-  content: '';
-  display: block;
-  position: absolute;
-  top: calc(var(--spacing) / 2 - var(--radius));
-  left: calc(var(--spacing) - var(--radius) - 1px);
-  width: calc(2 * var(--radius));
-  height: calc(2 * var(--radius));
-  border-radius: 50%;
-  background: #ddd;
-  cursor: pointer; /* Make circle clickable */
-}
-
-.tree summary::before {
-  z-index: 1;
-  background: #696 url('../assets/expand-collapse.svg') 0 0 no-repeat;
-  background-size: contain;
-}
-
-.tree details[open] > summary::before {
-  background-position: calc(-2 * var(--radius)) 0;
-}
-
-.tree summary::before {
-  pointer-events: auto; /* Allow clicks on circle */
-}
-
-.tree summary {
-  pointer-events: none; /* Disable clicks on the rest of the summary */
+.node:hover {
+  background-color: #f0f0f0;
 }

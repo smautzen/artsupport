@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
-import './NodeTree.css'; // Add your CSS for styling
+import './NodeTree.css';
 
 const NodeTree = ({ projectId, space }) => {
   const [categories, setCategories] = useState([]);
-  const [nodes, setNodes] = useState([]);
+  const [nodes, setNodes] = useState({});
+  const [collapsedCategories, setCollapsedCategories] = useState({});
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -15,18 +16,16 @@ const NodeTree = ({ projectId, space }) => {
       return;
     }
 
-    // Fetch categories from the specified space ('material' or 'conceptual')
     const spaceRef = collection(db, 'projects', projectId, space);
     const unsubscribeCategories = onSnapshot(
       spaceRef,
       (snapshot) => {
-        const categoriesData = snapshot.docs.map((doc) => ({
+        const fetchedCategories = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        console.log('Categories data fetched:', categoriesData);
-        setCategories(categoriesData);
-        setError(null); // Clear any previous errors
+        setCategories(fetchedCategories);
+        setError(null);
       },
       (err) => {
         console.error('Error fetching categories:', err);
@@ -34,37 +33,43 @@ const NodeTree = ({ projectId, space }) => {
       }
     );
 
-    return () => unsubscribeCategories(); // Clean up the listener
+    return () => unsubscribeCategories();
   }, [projectId, space]);
 
   useEffect(() => {
     if (categories.length > 0) {
       categories.forEach((category) => {
         const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
-        
-        // Use onSnapshot to listen for real-time changes to nodes
+
         const unsubscribeNodes = onSnapshot(
           nodesRef,
           (snapshot) => {
-            const nodesData = snapshot.docs.map((doc) => ({
+            const fetchedNodes = snapshot.docs.map((doc) => ({
               id: doc.id,
               ...doc.data(),
             }));
 
-            setNodes((prevNodes) => [
-              ...prevNodes.filter((nodeGroup) => nodeGroup.categoryId !== category.id), // Remove previous nodes for this category
-              { categoryId: category.id, nodes: nodesData },
-            ]);
+            setNodes((prevNodes) => ({
+              ...prevNodes,
+              [category.id]: fetchedNodes,
+            }));
           },
           (err) => {
             console.error('Error fetching nodes:', err);
           }
         );
 
-        return () => unsubscribeNodes(); // Clean up the listener for each category
+        return () => unsubscribeNodes();
       });
     }
   }, [categories, projectId, space]);
+
+  const toggleCollapse = (categoryId) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId], // Toggle collapse state for the specific category
+    }));
+  };
 
   return (
     <div className="node-tree">
@@ -72,36 +77,34 @@ const NodeTree = ({ projectId, space }) => {
       {categories.length === 0 ? (
         <p>No categories found. Start by adding new categories.</p>
       ) : (
-        <ul className="tree">
+        <div className="tree">
           {categories.map((category) => (
-            <li key={category.id}>
-              {/* Each category is inside a <details> tag */}
-              <details open>
-                <summary className="caret">
-                  {category.title}
-                </summary>
-                <ul>
-                  {/* Loop through the nodes under this category */}
-                  {nodes
-                    .filter((nodeGroup) => nodeGroup.categoryId === category.id)
-                    .flatMap((nodeGroup) =>
-                      nodeGroup.nodes.map((node) => (
-                        <li key={`${category.id}-${node.id}`}>
-                          {node.title}
-                        </li>
-                      ))
-                    )}
-                </ul>
-              </details>
-            </li>
+            <div key={category.id} className="category">
+              <div className="category-header">
+                <span
+                  className="caret"
+                  onClick={() => toggleCollapse(category.id)}
+                >
+                  {collapsedCategories[category.id] ? '+' : '-'}
+                </span>
+                <span className="category-title">{category.title}</span>
+              </div>
+              {!collapsedCategories[category.id] && (
+                <div className="category-content">
+                  {nodes[category.id] &&
+                    nodes[category.id].map((node) => (
+                      <div key={node.id} className="node">
+                        {node.title}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
-  
-  
-  
 };
 
 export default NodeTree;
