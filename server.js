@@ -40,21 +40,85 @@ app.post('/projects', async (req, res) => {
       linkedNodes: [],
     });
 
-    // Initialize material collection with a placeholder category
+    // Initialize material collection with 2 categories, each having 2 sample nodes
     const materialRef = db.collection('projects').doc(projectId).collection('material');
-    await materialRef.add({
-      title: 'Example Material',
-      description: 'This is a placeholder material.',
-      createdAt: new Date().toISOString(),
-    });
+    const materialCategories = [
+      {
+        title: 'Material Category 1',
+        description: 'Placeholder category for materials.',
+        createdAt: new Date().toISOString(),
+        nodes: [
+          { title: 'Sample Material 1', description: 'First sample material.' },
+          { title: 'Sample Material 2', description: 'Second sample material.' }
+        ]
+      },
+      {
+        title: 'Material Category 2',
+        description: 'Another placeholder category for materials.',
+        createdAt: new Date().toISOString(),
+        nodes: [
+          { title: 'Sample Material 3', description: 'Third sample material.' },
+          { title: 'Sample Material 4', description: 'Fourth sample material.' }
+        ]
+      }
+    ];
 
-    // Initialize conceptual collection with a placeholder category
+    for (const category of materialCategories) {
+      const categoryRef = await materialRef.add({
+        title: category.title,
+        description: category.description,
+        createdAt: category.createdAt,
+      });
+
+      // Add nodes to each category
+      const nodeRef = categoryRef.collection('nodes');
+      for (const node of category.nodes) {
+        await nodeRef.add({
+          title: node.title,
+          description: node.description,
+        });
+      }
+    }
+
+    // Initialize conceptual collection with 2 categories, each having 2 sample nodes
     const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
-    await conceptualRef.add({
-      title: 'Example Conceptual',
-      description: 'This is a placeholder conceptual idea.',
-      createdAt: new Date().toISOString(),
-    });
+    const conceptualCategories = [
+      {
+        title: 'Conceptual Category 1',
+        description: 'Placeholder conceptual category.',
+        createdAt: new Date().toISOString(),
+        nodes: [
+          { title: 'Sample Concept 1', description: 'First sample concept.' },
+          { title: 'Sample Concept 2', description: 'Second sample concept.' }
+        ]
+      },
+      {
+        title: 'Conceptual Category 2',
+        description: 'Another placeholder conceptual category.',
+        createdAt: new Date().toISOString(),
+        nodes: [
+          { title: 'Sample Concept 3', description: 'Third sample concept.' },
+          { title: 'Sample Concept 4', description: 'Fourth sample concept.' }
+        ]
+      }
+    ];
+
+    for (const category of conceptualCategories) {
+      const categoryRef = await conceptualRef.add({
+        title: category.title,
+        description: category.description,
+        createdAt: category.createdAt,
+      });
+
+      // Add nodes to each category
+      const nodeRef = categoryRef.collection('nodes');
+      for (const node of category.nodes) {
+        await nodeRef.add({
+          title: node.title,
+          description: node.description,
+        });
+      }
+    }
 
     res.status(201).send({ id: projectId });
   } catch (error) {
@@ -101,59 +165,6 @@ app.delete('/projects/:id', async (req, res) => {
     res.status(200).send({ message: 'Project and its collections deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
-    res.status(500).send({ error: error.message });
-  }
-});
-
-// Route to create sample data
-app.post('/create-sample-data', async (req, res) => {
-  try {
-    const { projectId } = req.body;
-
-    if (!projectId) {
-      return res.status(400).send({ error: 'Project ID is required' });
-    }
-
-    // Sample Chat Data
-    const chatRef = db.collection('projects').doc(projectId).collection('chat');
-    await chatRef.add({
-      messageType: 'user',
-      content: "I want to explore the theme of 'loneliness' and how to represent it with colors.",
-      timestamp: '2024-11-20T15:00:00Z',
-      linkedNodes: [],
-    });
-
-    const responseId = 'response12345';
-    await chatRef.add({
-      messageType: 'system',
-      content: `Based on your input, here are some suggestions:
-      In the Conceptual Space, you could add a node for 'Loneliness' under 'Themes.'
-      In the Material Space, you could add a color palette for 'Melancholy Hues.'`,
-      timestamp: '2024-11-20T15:01:00Z',
-      linkedNodes: ['Loneliness', 'Melancholy Hues'],
-      responseId,
-    });
-
-    // Material Collection
-    const materialRef = db.collection('projects').doc(projectId).collection('material');
-    await materialRef.add({
-      title: 'Melancholy Hues',
-      description: 'A palette of muted blues, grays, and soft purples.',
-      palette: { colors: ['#7F8C8D', '#95A5A6', '#BDC3C7'] },
-      responseId,
-    });
-
-    // Conceptual Collection
-    const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
-    await conceptualRef.add({
-      title: 'Loneliness',
-      description: 'The emotional state of being isolated or disconnected.',
-      responseId,
-    });
-
-    res.status(201).send({ message: 'Sample data created successfully' });
-  } catch (error) {
-    console.error('Error creating sample data:', error);
     res.status(500).send({ error: error.message });
   }
 });

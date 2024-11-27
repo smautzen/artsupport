@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import MaterialSpace from '../components/MaterialSpace';
-import ConceptualSpace from '../components/ConceptualSpace';
+import SpaceBox from '../components/SpaceBox';
 import ChatBox from '../components/ChatBox';
 
 const ProjectDetailsPage = () => {
@@ -13,13 +12,13 @@ const ProjectDetailsPage = () => {
   return (
     <div style={{ display: 'flex', gap: '1rem' }}>
       <div style={{ flex: 1 }}>
-        <MaterialSpace projectId={projectId} />
+        <SpaceBox projectId={projectId} spaceName='Material' />
       </div>
       <div style={{ flex: 2 }}>
         <ChatBox projectId={projectId} />
       </div>
       <div style={{ flex: 1 }}>
-        <ConceptualSpace projectId={projectId} />
+        <SpaceBox projectId={projectId} spaceName='Conceptual'/>
       </div>
     </div>
   );
