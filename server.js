@@ -21,6 +21,11 @@ app.post('/projects', async (req, res) => {
   try {
     const { name, description } = req.body;
 
+    // Configurable parameters
+    const numCategories = 2; // Number of categories
+    const numNodesPerCategory = 2; // Number of nodes per category
+    const numChildNodesPerNode = 2; // Number of child nodes per node
+
     // Add the project document
     const projectRef = await db.collection('projects').add({
       name,
@@ -40,85 +45,48 @@ app.post('/projects', async (req, res) => {
       linkedNodes: [],
     });
 
-    // Initialize material collection with 2 categories, each having 2 sample nodes
+    // Helper function to generate sample titles and descriptions
+    const generateSampleData = (type, index) => ({
+      title: `${type} ${index + 1}`,
+      description: `This is a description for ${type} ${index + 1}.`,
+    });
+
+    // Helper function to create categories and nodes
+    const createCategoriesAndNodes = async (collectionRef, categoryType) => {
+      for (let i = 0; i < numCategories; i++) {
+        const category = generateSampleData(`${categoryType} Category`, i);
+        const categoryRef = await collectionRef.add({
+          title: category.title,
+          description: category.description,
+          createdAt: new Date().toISOString(),
+        });
+
+        const nodeRef = categoryRef.collection('nodes');
+        for (let j = 0; j < numNodesPerCategory; j++) {
+          const node = generateSampleData(`${categoryType} Node`, j);
+          const nodeDoc = await nodeRef.add({
+            title: node.title,
+            description: node.description,
+          });
+
+          const childNodeRef = nodeDoc.collection('childNodes');
+          for (let k = 0; k < numChildNodesPerNode; k++) {
+            const childNode = generateSampleData(`${categoryType} Child Node`, k);
+            await childNodeRef.add({
+              title: childNode.title,
+              description: childNode.description,
+            });
+          }
+        }
+      }
+    };
+
+    // Initialize material and conceptual collections
     const materialRef = db.collection('projects').doc(projectId).collection('material');
-    const materialCategories = [
-      {
-        title: 'Material Category 1',
-        description: 'Placeholder category for materials.',
-        createdAt: new Date().toISOString(),
-        nodes: [
-          { title: 'Sample Material 1', description: 'First sample material.' },
-          { title: 'Sample Material 2', description: 'Second sample material.' }
-        ]
-      },
-      {
-        title: 'Material Category 2',
-        description: 'Another placeholder category for materials.',
-        createdAt: new Date().toISOString(),
-        nodes: [
-          { title: 'Sample Material 3', description: 'Third sample material.' },
-          { title: 'Sample Material 4', description: 'Fourth sample material.' }
-        ]
-      }
-    ];
+    await createCategoriesAndNodes(materialRef, 'Material');
 
-    for (const category of materialCategories) {
-      const categoryRef = await materialRef.add({
-        title: category.title,
-        description: category.description,
-        createdAt: category.createdAt,
-      });
-
-      // Add nodes to each category
-      const nodeRef = categoryRef.collection('nodes');
-      for (const node of category.nodes) {
-        await nodeRef.add({
-          title: node.title,
-          description: node.description,
-        });
-      }
-    }
-
-    // Initialize conceptual collection with 2 categories, each having 2 sample nodes
     const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
-    const conceptualCategories = [
-      {
-        title: 'Conceptual Category 1',
-        description: 'Placeholder conceptual category.',
-        createdAt: new Date().toISOString(),
-        nodes: [
-          { title: 'Sample Concept 1', description: 'First sample concept.' },
-          { title: 'Sample Concept 2', description: 'Second sample concept.' }
-        ]
-      },
-      {
-        title: 'Conceptual Category 2',
-        description: 'Another placeholder conceptual category.',
-        createdAt: new Date().toISOString(),
-        nodes: [
-          { title: 'Sample Concept 3', description: 'Third sample concept.' },
-          { title: 'Sample Concept 4', description: 'Fourth sample concept.' }
-        ]
-      }
-    ];
-
-    for (const category of conceptualCategories) {
-      const categoryRef = await conceptualRef.add({
-        title: category.title,
-        description: category.description,
-        createdAt: category.createdAt,
-      });
-
-      // Add nodes to each category
-      const nodeRef = categoryRef.collection('nodes');
-      for (const node of category.nodes) {
-        await nodeRef.add({
-          title: node.title,
-          description: node.description,
-        });
-      }
-    }
+    await createCategoriesAndNodes(conceptualRef, 'Conceptual');
 
     res.status(201).send({ id: projectId });
   } catch (error) {
@@ -126,6 +94,7 @@ app.post('/projects', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 // Fetch all projects
 app.get('/projects', async (req, res) => {

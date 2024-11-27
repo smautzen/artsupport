@@ -1,44 +1,18 @@
-/* ConceptualSpace.css */
+/* Shared styles for all space boxes */
+.space-box {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+  height: 100%; /* Adjust to fit the parent container */
+}
 
+/* Specific styles for Material Space */
+.material-space {
+  background-color: #f0c0c0;
+}
+
+/* Specific styles for Conceptual Space */
 .conceptual-space {
-    padding: 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-  }
-  
-  .conceptual-space h2 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 1rem;
-  }
-  
-  .conceptual-space .error {
-    color: red;
-    font-weight: bold;
-  }
-  
-  .conceptual-space .empty-state {
-    font-style: italic;
-    color: #666;
-  }
-  
-  .conceptual-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .concept-item {
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .concept-item strong {
-    color: #007bff;
-  }
-  
+  background-color: #dce1f5;
+}

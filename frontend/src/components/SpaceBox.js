@@ -4,10 +4,10 @@ import NodeTree from './NodeTree'; // Import the NodeTree component
 
 const SpaceBox = ({ projectId, spaceName }) => {
   return (
-    <div className="conceptual-space">
+    <div className={`space-box ${spaceName.toLowerCase()}-space`}>
       <h2>{spaceName} Space</h2>
-      {/* Use the NodeTree component and pass projectId and space="material" */}
       <NodeTree projectId={projectId} space={spaceName.toLowerCase()} />
+      {/* <div style={{ height: '90vh', border: '1px solid red', color: 'red'}}></div> */}
     </div>
   );
 };

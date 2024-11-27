@@ -1,51 +1,51 @@
+/* Ensure no overflow from the root */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* Allow full viewport height */
+  overflow: hidden; /* Disable scrolling for the page */
+}
+
 .project-details-container {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    gap: 16px;
-    padding: 16px;
-  }
-  
-  .material-space, .conceptual-space, .chatbox {
-    border: 1px solid #ccc;
-    padding: 16px;
-    border-radius: 8px;
-  }
-  
-  .chatbox-messages {
-    height: 300px;
-    overflow-y: auto;
-    margin-bottom: 8px;
-    padding: 8px;
-    border: 1px solid #ddd;
-  }
-  
-  .chat-message.user {
-    text-align: right;
-    color: blue;
-  }
-  
-  .chat-message.assistant {
-    text-align: left;
-    color: green;
-  }
-  
-  .sample-data-button-container {
-    grid-column: 1 / span 3; /* Span across all columns */
-    text-align: center;
-    margin-top: 16px;
-  }
-  
-  .create-sample-data-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .create-sample-data-button:hover {
-    background-color: #0056b3;
-  }
-  
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr; /* Three columns layout */
+  gap: 16px;
+  padding: 16px;
+  height: 100vh; /* Full screen height */
+  overflow: hidden; /* Prevent child components from overflowing the page */
+}
+
+.space-box, .chatbox {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  height: 100%; /* Ensure child takes up parent height */
+  overflow: auto; /* Scroll content if it overflows */
+}
+
+.chatbox-messages {
+  flex: 1; /* Allow this section to grow and shrink */
+  overflow-y: auto; /* Enable vertical scrolling for messages */
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+.sample-data-button-container {
+  grid-column: 1 / span 3; /* Span across all columns */
+  text-align: center;
+  margin-top: 16px;
+}
+
+.create-sample-data-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.create-sample-data-button:hover {
+  background-color: #0056b3;
+}
