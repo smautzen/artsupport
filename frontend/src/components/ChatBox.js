@@ -81,19 +81,30 @@ function ChatBox({ projectId }) {
           ))}
         <div ref={messagesEndRef} /> {/* Empty div to anchor scrolling */}
       </div>
-
+  
+      {/* Action div */}
+      <div className="action-div">
+        <div className="nodes-container">
+          <div className="nodes-scrollable">
+            {/* Future content for nodes will go here */}
+          </div>
+        </div>
+        <button className="generate-images-btn">Generate images</button>
+      </div>
+  
       <div className="chatbox-input">
-  <textarea
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    onKeyDown={handleKeyDown} // Allow sending with Enter
-    placeholder="Type your message..."
-  />
-  <button onClick={sendMessage}>Send</button>
-</div>
-
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown} // Allow sending with Enter
+          placeholder="Type your message..."
+        />
+        <button onClick={sendMessage}>Send</button>
+      </div>
     </div>
   );
+  
+  
 }
 
 export default ChatBox;
