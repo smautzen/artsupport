@@ -147,6 +147,40 @@ app.delete('/projects/:id', async (req, res) => {
   }
 });
 
+app.post('/chat', async (req, res) => {
+  try {
+    const { projectId, message } = req.body;
+
+    if (!projectId || !message) {
+      return res.status(400).send({ error: 'Project ID and message are required.' });
+    }
+
+    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+
+    // Add the user's message to the chat collection
+    const userMessageRef = await chatCollectionRef.add({
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      linkedNodes: [], // Include linked nodes or other metadata if needed
+    });
+
+    // Automatically add a system response
+    await chatCollectionRef.add({
+      messageType: 'system',
+      content: `Responding to: "${message}"`,
+      timestamp: new Date().toISOString(),
+      linkedNodes: [], // Include metadata if needed
+    });
+
+    res.status(201).send({ messageId: userMessageRef.id });
+  } catch (error) {
+    console.error('Error handling chat message:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
