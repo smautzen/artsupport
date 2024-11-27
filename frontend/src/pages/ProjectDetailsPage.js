@@ -1,9 +1,11 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import MaterialSpace from '../components/MaterialSpace';
 import ConceptualSpace from '../components/ConceptualSpace';
 import ChatBox from '../components/ChatBox';
 
-const ProjectDetailsPage = ({ projectId }) => {
+const ProjectDetailsPage = () => {
+  const { projectId } = useParams(); // Get projectId from the URL params
 
   // Log the projectId for debugging
   console.log('ProjectDetailsPage: projectId =', projectId);
