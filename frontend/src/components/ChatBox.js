@@ -3,6 +3,9 @@ import axios from 'axios';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import './ChatBox.css';
 
+import chatIcon from '../assets/chat.png';
+import helpIcon from '../assets/help.png';
+
 // Forward ref to expose methods
 const ChatBox = forwardRef(({ projectId }, ref) => {
   const [messages, setMessages] = useState([]);
@@ -88,7 +91,14 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
 
   return (
     <div className="chatbox">
-      <h2>Chat</h2>
+      <div className="chat-header">
+        <h2>Chat</h2>
+        <img src={chatIcon} alt={`Chat Icon`} className="chat-icon" />
+      </div>
+      <div className="space-info">
+        <strong><span className="chat-description">Where we bring elements from the spaces together to explore new possibilites (graphic connecting the spaces to showcase?)</span></strong>
+        <img src={helpIcon} alt={`help`} className="help-icon" />
+      </div>
       <div className="chatbox-messages">
         {messages
           .sort((a, b) => a.timestamp - b.timestamp)

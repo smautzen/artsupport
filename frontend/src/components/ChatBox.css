@@ -188,3 +188,23 @@
 .generate-images-btn:hover {
   background-color: #0056b3;
 }
+
+.chat-header {
+  display: flex;
+  align-items: center; /* Centers items vertically */
+  justify-content: center; /* Centers items horizontally */
+  gap: 10px; /* Adds spacing between title and icon */
+}
+
+.chat-icon {
+  width: 24px; /* Adjust as needed */
+  height: 24px; /* Adjust as needed */
+}
+
+.chat-description {
+  display: block; /* Ensures it takes its own line */
+  text-align: center; /* Centers the text horizontally */
+  font-size: 1rem; /* Adjust font size as needed */
+  color: #666; /* Set a subtle color for the description */
+  margin-bottom: 10px; /* Adds spacing above the NodeTree */
+}

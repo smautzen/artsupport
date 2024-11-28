@@ -7,6 +7,35 @@
   height: 100%; /* Adjust to fit the parent container */
 }
 
+/* Style the scrollbar in the space-box */
+.space-box::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+  height: 8px; /* Height of the scrollbar for horizontal scrolling */
+}
+
+/* Style the scrollbar track */
+.space-box::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Light gray background */
+  border-radius: 8px; /* Rounded corners */
+}
+
+/* Style the scrollbar thumb (the draggable part) */
+.space-box::-webkit-scrollbar-thumb {
+  background: #888; /* Gray color */
+  border-radius: 8px; /* Rounded corners */
+}
+
+/* Style the scrollbar thumb on hover */
+.space-box::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Darker gray on hover */
+}
+
+/* Firefox scrollbar styles */
+.space-box {
+  scrollbar-width: thin; /* Make the scrollbar thinner */
+  scrollbar-color: #888 #f1f1f1; /* Thumb color and track color */
+}
+
 /* Specific styles for Material Space */
 .material-space {
   background-color: #f0c0c0;
@@ -16,3 +45,40 @@
 .conceptual-space {
   background-color: #dce1f5;
 }
+
+.space-header {
+  display: flex;
+  align-items: center; /* Centers items vertically */
+  justify-content: center; /* Centers items horizontally */
+  gap: 10px; /* Adds spacing between title and icon */
+  height: fit-content;
+}
+
+.space-info {
+  display: flex;
+  align-items: center; /* Centers items vertically */
+  justify-content: center; /* Centers items horizontally */
+  gap: 10px; /* Adds spacing between title and icon */
+  margin-top: -15px; /* Adds spacing above the NodeTree */
+}
+
+.space-icon {
+  width: 44px; /* Adjust as needed */
+  height: 44px; /* Adjust as needed */
+  margin-left: 10px; /* Space between the title and the icon */
+}
+
+.help-icon {
+  width: 14px; /* Adjust as needed */
+  height: 14px; /* Adjust as needed */
+  opacity: 0.5;
+}
+
+.space-description {
+  display: block; /* Ensures it takes its own line */
+  text-align: center; /* Centers the text horizontally */
+  font-size: 1rem; /* Adjust font size as needed */
+  color: #666; /* Set a subtle color for the description */
+  margin-bottom: 10px; /* Adds spacing above the NodeTree */
+}
+
