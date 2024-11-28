@@ -22,6 +22,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
       (snapshot) => {
         const fetchedCategories = snapshot.docs.map((doc) => ({
           id: doc.id,
+          space,
           ...doc.data(),
         }));
         setCategories(fetchedCategories);
@@ -96,7 +97,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                       <div
                         key={node.id}
                         className="node"
-                        onClick={() => onNodeClick(node)} // Trigger onNodeClick with the clicked node
+                        onClick={() => onNodeClick(node, space)} // Trigger onNodeClick with the clicked node
                       >
                         {node.title}
                       </div>

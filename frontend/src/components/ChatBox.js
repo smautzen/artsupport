@@ -67,7 +67,8 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     }
   };
 
-  const addNode = (node) => {
+  const addNode = (node, space) => {
+    node.space = space;
     setSelectedNodes((prevNodes) => {
       const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
       if (!isAlreadySelected) {
@@ -104,19 +105,22 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
       </div>
 
       <div className="action-div">
-        <div className="nodes-container">
+        {selectedNodes.length > 0 && <div className="nodes-container">
           <div className="nodes-scrollable">
             {selectedNodes.map((node) => (
               <div key={node.id} className="node-item">
-                <div className="node-name">{node.title}</div>
+                <div className="node-name" style={{backgroundColor: node.space === "material" ? "#007bff" : "#28a745"}}>
+                  {node.title}</div>
                 <div className="node-delete">
-                  <button onClick={() => removeNode(node.id)}>Delete</button>
+                  <button className="node-delete-btn" onClick={() => removeNode(node.id)}>x</button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </div>}
         <button className="generate-images-btn">Generate images</button>
+        <button className="explore-concepts-btn">Explore concepts</button>
+        {selectedNodes.length === 0 && <div>Click a node to attach it to your message!</div>}
       </div>
 
       <div className="chatbox-input">

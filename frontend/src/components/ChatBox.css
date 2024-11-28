@@ -132,8 +132,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px;
-  border-bottom: 1px solid #ddd;
+  margin-bottom: 5px; /* Space between pills */
 }
 
 .node-item:last-child {
@@ -141,19 +140,41 @@
 }
 
 .node-name {
-  flex: 1; /* Take up remaining space */
-  padding-right: 10px;
-  overflow: hidden; /* Prevent text overflow */
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  text-align: center; /* Center the text inside the button */
+  padding: 7px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 16px 0 0 16px; /* Rounded corners on the left */
+  font-size: 1rem;
+  cursor: default; /* Prevent pointer cursor on the name button */
+}
+
+.node-delete-btn {
+  text-align: center; /* Center the 'x' inside the button */
+  padding: 8px 16px;
+  background-color: #cf6d6d;
+  color: white;
+  border: none;
+  border-radius: 0 16px 16px 0; /* Rounded corners on the right */
+  font-size: 1rem;
+  cursor: pointer; /* Pointer cursor for delete */
+}
+
+.node-delete-btn:hover {
+  background-color: #c82333; /* Darker red on hover */
+}
+
+.node-item .node-delete-btn:focus {
+  outline: none; /* Remove focus outline */
 }
 
 .node-delete {
-  margin-left: 10px;
 }
 
 
-.generate-images-btn {
+.generate-images-btn, .explore-concepts-btn {
   margin-left: 10px; /* Space between the container and button */
   padding: 8px 16px;
   border: none;
