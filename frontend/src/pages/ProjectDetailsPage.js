@@ -1,36 +1,30 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import SpaceBox from '../components/SpaceBox';
 import ChatBox from '../components/ChatBox';
-import './ProjectDetailsPage.css'; // Import the CSS file
+import './ProjectDetailsPage.css';
 
 const ProjectDetailsPage = () => {
-  const { projectId } = useParams(); // Get projectId from the URL params
-  const [selectedNode, setSelectedNode] = useState(null); // Track the clicked node
+  const { projectId } = useParams();
+  const chatBoxRef = useRef(null); // Reference to the ChatBox
 
   const handleNodeClick = (node) => {
-    console.log('Node clicked:', node); // For debugging
-    setSelectedNode(node);
+    console.log('Node clicked in NodeTree:', node); // Debug
+    if (chatBoxRef.current) {
+      chatBoxRef.current.addNode(node); // Call the addNode method in ChatBox
+    }
   };
 
   return (
     <div style={{ display: 'flex', gap: '1rem', padding: '20px', height: '90vh' }}>
       <div style={{ flex: 1 }}>
-        <SpaceBox
-          projectId={projectId}
-          spaceName="Material"
-          onNodeClick={handleNodeClick}
-        />
+        <SpaceBox projectId={projectId} spaceName="Material" onNodeClick={handleNodeClick} />
       </div>
       <div style={{ flex: 2 }}>
-        <ChatBox projectId={projectId} selectedNode={selectedNode} />
+        <ChatBox ref={chatBoxRef} projectId={projectId} />
       </div>
       <div style={{ flex: 1 }}>
-        <SpaceBox
-          projectId={projectId}
-          spaceName="Conceptual"
-          onNodeClick={handleNodeClick}
-        />
+        <SpaceBox projectId={projectId} spaceName="Conceptual" onNodeClick={handleNodeClick} />
       </div>
     </div>
   );
