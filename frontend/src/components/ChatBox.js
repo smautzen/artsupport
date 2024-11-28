@@ -67,8 +67,7 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     }
   };
 
-  const addNode = (node, space) => {
-    node.space = space;
+  const addNode = (node) => {
     setSelectedNodes((prevNodes) => {
       const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
       if (!isAlreadySelected) {

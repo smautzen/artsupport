@@ -8,10 +8,10 @@ const ProjectDetailsPage = () => {
   const { projectId } = useParams();
   const chatBoxRef = useRef(null); // Reference to the ChatBox
 
-  const handleNodeClick = (node, space) => {
-    console.log('Node clicked in NodeTree:', node + space); // Debug
+  const handleNodeClick = (node) => {
+    console.log('Node clicked in NodeTree:', node); // Debug
     if (chatBoxRef.current) {
-      chatBoxRef.current.addNode(node, space); // Call the addNode method in ChatBox
+      chatBoxRef.current.addNode(node); // Call the addNode method in ChatBox
     }
   };
 
