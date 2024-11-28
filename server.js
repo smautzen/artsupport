@@ -58,7 +58,7 @@ app.post('/projects', async (req, res) => {
         description: `This is a description for ${type} ${index + 1}.`,
       });
 
-      const createCategoriesAndNodes = async (collectionRef, categoryType) => {
+      const createCategoriesAndNodes = async (collectionRef, categoryType, space) => {
         const numCategories = 2;
         const numNodesPerCategory = 2;
         const numChildNodesPerNode = 2;
@@ -69,6 +69,8 @@ app.post('/projects', async (req, res) => {
             title: category.title,
             description: category.description,
             createdAt: new Date().toISOString(),
+            type: 'category',
+            space, // Add space property to category
           });
 
           const nodeRef = categoryRef.collection('nodes');
@@ -77,6 +79,8 @@ app.post('/projects', async (req, res) => {
             const nodeDoc = await nodeRef.add({
               title: node.title,
               description: node.description,
+              type: 'text', // Default type
+              space, // Add space property to node
             });
 
             const childNodeRef = nodeDoc.collection('childNodes');
@@ -85,14 +89,17 @@ app.post('/projects', async (req, res) => {
               await childNodeRef.add({
                 title: childNode.title,
                 description: childNode.description,
+                type: 'text', // Default type to child nodes
+                space, // Add space property to child node
               });
             }
           }
         }
       };
 
-      await createCategoriesAndNodes(materialRef, 'Material');
-      await createCategoriesAndNodes(conceptualRef, 'Conceptual');
+      // Create categories and nodes with their respective spaces
+      await createCategoriesAndNodes(materialRef, 'Material', 'material'); // Set space to "material"
+      await createCategoriesAndNodes(conceptualRef, 'Conceptual', 'conceptual'); // Set space to "conceptual"
     } else {
       console.log('Creating project without sample data'); // Debug log
     }
@@ -103,8 +110,6 @@ app.post('/projects', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
-
-
 
 
 // Fetch all projects
