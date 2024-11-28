@@ -4,8 +4,8 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
 
 const NodeTree = ({ projectId, space, onNodeClick }) => {
-  const [treeData, setTreeData] = useState([]);
-  const [collapsedItems, setCollapsedItems] = useState({});
+  const [treeData, setTreeData] = useState([]); // Hierarchical data for categories and nodes
+  const [collapsedItems, setCollapsedItems] = useState({}); // State for collapsed items
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -17,7 +17,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     const fetchTreeData = async () => {
       try {
         const spaceRef = collection(db, 'projects', projectId, space);
-    
+
         // Listen for changes to categories
         onSnapshot(
           spaceRef,
@@ -27,10 +27,10 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
               ...categoryDoc.data(),
               nodes: [], // Placeholder for nodes
             }));
-    
+
             categories.forEach((category) => {
               const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
-    
+
               // Listen for changes to nodes in each category
               onSnapshot(nodesRef, (nodesSnapshot) => {
                 const nodes = nodesSnapshot.docs.map((nodeDoc) => ({
@@ -38,7 +38,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                   ...nodeDoc.data(),
                   childNodes: [], // Placeholder for child nodes
                 }));
-    
+
                 nodes.forEach((node) => {
                   const childNodesRef = collection(
                     db,
@@ -50,14 +50,14 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                     node.id,
                     'childNodes'
                   );
-    
+
                   // Listen for changes to child nodes in each node
                   onSnapshot(childNodesRef, (childNodesSnapshot) => {
                     const childNodes = childNodesSnapshot.docs.map((childNodeDoc) => ({
                       id: childNodeDoc.id,
                       ...childNodeDoc.data(),
                     }));
-    
+
                     // Update state with child nodes
                     setTreeData((prevTree) =>
                       prevTree.map((prevCategory) =>
@@ -73,7 +73,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                     );
                   });
                 });
-    
+
                 // Update state with nodes
                 setTreeData((prevTree) =>
                   prevTree.map((prevCategory) =>
@@ -82,7 +82,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                 );
               });
             });
-    
+
             // Set initial categories
             setTreeData(categories);
           },
@@ -96,7 +96,6 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
         setError('Failed to fetch tree data.');
       }
     };
-    
 
     fetchTreeData();
   }, [projectId, space]);
@@ -108,40 +107,42 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     }));
   };
 
+  const renderNodes = (nodes) => {
+    return nodes.map((node) => (
+      <div key={node.id} className="node">
+        <div className="node-content">
+          <span className="caret" onClick={() => toggleCollapse(node.id)}>
+            {collapsedItems[node.id] ? '+' : '-'}
+          </span>
+          <span className="node-title" onClick={() => onNodeClick(node)}>
+            {node.title}
+          </span>
+          <div>{node.description}</div>
+        
+        {!collapsedItems[node.id] &&
+          node.childNodes &&
+          node.childNodes.length > 0 && (
+            <div className="node-children">
+              {renderNodes(node.childNodes)}</div>
+          )}
+      </div>
+      </div>
+    ));
+  };
+
   const renderTree = (tree) => {
     return tree.map((category) => (
       <div key={category.id} className="category">
-        <div className="category-header">
+        <div className="category-content">
           <span className="caret" onClick={() => toggleCollapse(category.id)}>
             {collapsedItems[category.id] ? '+' : '-'}
           </span>
           <span className="category-title">{category.title}</span>
         </div>
         {!collapsedItems[category.id] && (
-          <div className="category-content">
-            {category.nodes.map((node) => (
-              <div key={node.id} className="node">
-                <div className="node-header">
-                  <span className="caret" onClick={() => toggleCollapse(node.id)}>
-                    {collapsedItems[node.id] ? '+' : '-'}
-                  </span>
-                  <span className="node-title" onClick={() => onNodeClick(node)}>
-                    {node.title}
-                  </span>
-                </div>
-                {!collapsedItems[node.id] &&
-                  node.childNodes.map((childNode) => (
-                    <div
-                      key={childNode.id}
-                      className="child-node"
-                      onClick={() => onNodeClick(childNode)}
-                    >
-                      {childNode.title}
-                    </div>
-                  ))}
-              </div>
-            ))}
-          </div>
+          <div className="category-children">
+            <div>{category.description}</div>
+            {renderNodes(category.nodes)}</div>
         )}
       </div>
     ));

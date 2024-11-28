@@ -9,14 +9,13 @@
 }
 
 .category {
-  border: 1px solid #ddd;
+  border: 1px solid black;
   border-radius: 5px;
   margin-bottom: 10px;
   padding: 10px;
-  background-color: #f9f9f9;
 }
 
-.category-header {
+.category-content {
   display: flex;
   align-items: center;
 }
@@ -38,7 +37,7 @@
   cursor: default; /* Prevent pointer events on title */
 }
 
-.category-content {
+.category-children {
   margin-top: 10px;
   padding-left: 20px;
   display: block; /* Set display: none; for collapsed state */
@@ -59,4 +58,11 @@
 
 .node:hover {
   background-color: #f0f0f0;
+}
+
+.node-content {
+  border: solid 1px black;
+  margin-top: 10px;
+  padding-left: 20px;
+  display: block; /* Set display: none; for collapsed state */
 }
