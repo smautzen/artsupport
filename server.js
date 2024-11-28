@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const admin = require('firebase-admin');
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -9,13 +8,16 @@ app.use(cors());
 app.use(express.json());
 
 // Firebase Admin setup
+const admin = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
+
 const serviceAccount = require('./firebase-service-account.json');
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
 });
 
-const db = admin.firestore();
+const db = getFirestore();
 
 app.post('/projects', async (req, res) => {
   try {
@@ -116,67 +118,57 @@ app.get('/projects', async (req, res) => {
   }
 });
 
-// Delete a project
 app.delete('/projects/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Delete the project document
-    await db.collection('projects').doc(id).delete();
+    const projectDocRef = db.collection('projects').doc(id);
+    console.log(`Recursively deleting project: ${projectDocRef.path}`);
 
-    // Delete the sub-collections (chat, material, conceptual)
-    const chatRef = db.collection('projects').doc(id).collection('chat');
-    const materialRef = db.collection('projects').doc(id).collection('material');
-    const conceptualRef = db.collection('projects').doc(id).collection('conceptual');
+    // Automatically deletes subcollections and parent document
+    await getFirestore().recursiveDelete(projectDocRef);
 
-    // Firestore doesn't natively delete sub-collections; loop through and delete manually
-    const deleteSubCollection = async (ref) => {
-      const snapshot = await ref.get();
-      const deletePromises = snapshot.docs.map((doc) => doc.ref.delete());
-      await Promise.all(deletePromises);
-    };
-
-    await deleteSubCollection(chatRef);
-    await deleteSubCollection(materialRef);
-    await deleteSubCollection(conceptualRef);
-
-    res.status(200).send({ message: 'Project and its collections deleted successfully' });
+    res.status(200).send({ message: 'Project and its subcollections deleted successfully' });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    console.error('Error during recursive deletion:', error);
     res.status(500).send({ error: error.message });
   }
 });
 
+
 app.post('/chat', async (req, res) => {
   try {
-    const { projectId, message } = req.body;
+      const { projectId, message, nodeReferences } = req.body;
 
-    if (!projectId || !message) {
-      return res.status(400).send({ error: 'Project ID and message are required.' });
-    }
+      console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
 
-    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+      if (!projectId || !message) {
+          return res.status(400).send({ error: 'Project ID and message are required.' });
+      }
 
-    // Add the user's message to the chat collection
-    const userMessageRef = await chatCollectionRef.add({
-      messageType: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-      linkedNodes: [], // Include linked nodes or other metadata if needed
-    });
+      const references = Array.isArray(nodeReferences) ? nodeReferences : [];
 
-    // Automatically add a system response
-    await chatCollectionRef.add({
-      messageType: 'system',
-      content: `Responding to: "${message}"`,
-      timestamp: new Date().toISOString(),
-      linkedNodes: [], // Include metadata if needed
-    });
+      const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
 
-    res.status(201).send({ messageId: userMessageRef.id });
+      const userMessageRef = await chatCollectionRef.add({
+          messageType: 'user',
+          content: message,
+          timestamp: new Date().toISOString(),
+          linkedNodes: references, // Save the references here
+      });
+
+      const systemResponse = `Responding to: "${message}"`;
+      await chatCollectionRef.add({
+          messageType: 'system',
+          content: systemResponse,
+          timestamp: new Date().toISOString(),
+          linkedNodes: [], // No references for system messages in this example
+      });
+
+      res.status(201).send({ messageId: userMessageRef.id });
   } catch (error) {
-    console.error('Error handling chat message:', error);
-    res.status(500).send({ error: error.message });
+      console.error('Error handling chat message:', error);
+      res.status(500).send({ error: error.message });
   }
 });
 

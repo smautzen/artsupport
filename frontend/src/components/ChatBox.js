@@ -41,20 +41,26 @@ function ChatBox({ projectId, selectedNode }) {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-  
+
     try {
-      // Send the user's message to the server
-      await axios.post('http://localhost:4000/chat', {
-        projectId,
-        message: input,
-      });
-  
-      setInput(''); // Clear the input field after sending
+        // Construct the payload with selectedNode, if available
+        const payload = {
+            projectId,
+            message: input,
+            nodeReferences: selectedNode ? [{ id: selectedNode.id, title: selectedNode.title }] : [], // Ensure it exists
+        };
+
+        console.log('Payload sent to server:', payload); // Debug: Check the payload
+
+        // Send the user's message to the server
+        await axios.post('http://localhost:4000/chat', payload);
+
+        setInput(''); // Clear the input field after sending
     } catch (error) {
-      console.error('Error sending message to server:', error);
+        console.error('Error sending message to server:', error);
     }
-  };
-  
+};
+
 
   return (
     <div className="chatbox">
