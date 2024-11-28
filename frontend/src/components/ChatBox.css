@@ -170,10 +170,6 @@
   outline: none; /* Remove focus outline */
 }
 
-.node-delete {
-}
-
-
 .generate-images-btn, .explore-concepts-btn {
   margin-left: 10px; /* Space between the container and button */
   padding: 8px 16px;

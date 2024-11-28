@@ -1,0 +1,18 @@
+.palette-node {
+    margin: 10px 0;
+  }
+  
+  .palette-container {
+    display: flex; /* Ensures circles are aligned in a row */
+    gap: 10px; /* Adds spacing between circles */
+    margin-top: 10px;
+  }
+  
+  .color-circle {
+    width: 40px; /* Adjust size as needed */
+    height: 40px; /* Adjust size as needed */
+    border-radius: 50%; /* Makes the element a circle */
+    border: 3px solid gray; /* Thick gray border */
+    display: inline-block;
+  }
+  

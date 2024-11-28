@@ -3,6 +3,10 @@ import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
 
+import TextNodeComponent from './nodecomponents/TextNodeComponent';
+import ImageNodeComponent from './nodecomponents/ImageNodeComponent';
+import PaletteNodeComponent from './nodecomponents/PaletteNodeComponent';
+
 import categoryIcon from '../assets/category.png';
 import textNodeIcon from '../assets/textnode.png';
 import imageNodeIcon from '../assets/imagenode.png';
@@ -123,6 +127,21 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
   const renderNodes = (nodes) => {
     return nodes.map((node) => {
       const icon = nodeTypeIcons[node.type] || textNodeIcon; // Default to textNodeIcon if type is missing
+  
+      // Function to dynamically render the correct component
+      const renderNodeComponent = (node) => {
+        switch (node.type) {
+          case 'text':
+            return <TextNodeComponent node={node} />;
+          case 'image':
+            return <ImageNodeComponent node={node} />;
+          case 'palette':
+            return <PaletteNodeComponent node={node} />;
+          default:
+            return <div>Unsupported node type: {node.type}</div>;
+        }
+      };
+  
       return (
         <div key={node.id} className="node">
           <div className="node-content">
@@ -139,7 +158,8 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
             <span className="caret" onClick={() => toggleCollapse(node.id)}>
               {collapsedItems[node.id] ? '+' : '-'}
             </span>
-            <div>{node.description}</div>
+            {/* Dynamically render the node component */}
+            {renderNodeComponent(node)}
           </div>
           {!collapsedItems[node.id] &&
             node.childNodes &&
@@ -151,7 +171,7 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
         </div>
       );
     });
-  };
+  };  
   
 
   const renderTree = (tree) => {
