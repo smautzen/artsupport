@@ -45,12 +45,17 @@
 }
 
 .node {
-  margin: 5px 0;
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background-color: #fff;
+  margin-left: 10px;
+  padding: 5px;
 }
+
+.child-node {
+  margin-left: 20px;
+  padding: 3px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
 
 .node:hover {
   background-color: #f0f0f0;

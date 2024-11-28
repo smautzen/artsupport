@@ -4,109 +4,156 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
 
 const NodeTree = ({ projectId, space, onNodeClick }) => {
-  const [categories, setCategories] = useState([]);
-  const [nodes, setNodes] = useState({});
-  const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [treeData, setTreeData] = useState([]);
+  const [collapsedItems, setCollapsedItems] = useState({});
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!projectId || !space) {
-      console.error('NodeTree: Missing projectId or space.');
       setError('No project or space selected.');
       return;
     }
 
-    const spaceRef = collection(db, 'projects', projectId, space);
-    const unsubscribeCategories = onSnapshot(
-      spaceRef,
-      (snapshot) => {
-        const fetchedCategories = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          space,
-          ...doc.data(),
-        }));
-        setCategories(fetchedCategories);
-        setError(null);
-      },
-      (err) => {
-        console.error('Error fetching categories:', err);
-        setError('Failed to fetch categories.');
-      }
-    );
-
-    return () => unsubscribeCategories();
-  }, [projectId, space]);
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      categories.forEach((category) => {
-        const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
-
-        const unsubscribeNodes = onSnapshot(
-          nodesRef,
+    const fetchTreeData = async () => {
+      try {
+        const spaceRef = collection(db, 'projects', projectId, space);
+    
+        // Listen for changes to categories
+        onSnapshot(
+          spaceRef,
           (snapshot) => {
-            const fetchedNodes = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
+            const categories = snapshot.docs.map((categoryDoc) => ({
+              id: categoryDoc.id,
+              ...categoryDoc.data(),
+              nodes: [], // Placeholder for nodes
             }));
-
-            setNodes((prevNodes) => ({
-              ...prevNodes,
-              [category.id]: fetchedNodes,
-            }));
+    
+            categories.forEach((category) => {
+              const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
+    
+              // Listen for changes to nodes in each category
+              onSnapshot(nodesRef, (nodesSnapshot) => {
+                const nodes = nodesSnapshot.docs.map((nodeDoc) => ({
+                  id: nodeDoc.id,
+                  ...nodeDoc.data(),
+                  childNodes: [], // Placeholder for child nodes
+                }));
+    
+                nodes.forEach((node) => {
+                  const childNodesRef = collection(
+                    db,
+                    'projects',
+                    projectId,
+                    space,
+                    category.id,
+                    'nodes',
+                    node.id,
+                    'childNodes'
+                  );
+    
+                  // Listen for changes to child nodes in each node
+                  onSnapshot(childNodesRef, (childNodesSnapshot) => {
+                    const childNodes = childNodesSnapshot.docs.map((childNodeDoc) => ({
+                      id: childNodeDoc.id,
+                      ...childNodeDoc.data(),
+                    }));
+    
+                    // Update state with child nodes
+                    setTreeData((prevTree) =>
+                      prevTree.map((prevCategory) =>
+                        prevCategory.id === category.id
+                          ? {
+                              ...prevCategory,
+                              nodes: prevCategory.nodes.map((prevNode) =>
+                                prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
+                              ),
+                            }
+                          : prevCategory
+                      )
+                    );
+                  });
+                });
+    
+                // Update state with nodes
+                setTreeData((prevTree) =>
+                  prevTree.map((prevCategory) =>
+                    prevCategory.id === category.id ? { ...prevCategory, nodes } : prevCategory
+                  )
+                );
+              });
+            });
+    
+            // Set initial categories
+            setTreeData(categories);
           },
           (err) => {
-            console.error('Error fetching nodes:', err);
+            console.error('Error fetching categories:', err);
+            setError('Failed to fetch categories.');
           }
         );
+      } catch (err) {
+        console.error('Error fetching tree data:', err);
+        setError('Failed to fetch tree data.');
+      }
+    };
+    
 
-        return () => unsubscribeNodes();
-      });
-    }
-  }, [categories, projectId, space]);
+    fetchTreeData();
+  }, [projectId, space]);
 
-  const toggleCollapse = (categoryId) => {
-    setCollapsedCategories((prev) => ({
+  const toggleCollapse = (id) => {
+    setCollapsedItems((prev) => ({
       ...prev,
-      [categoryId]: !prev[categoryId], // Toggle collapse state for the specific category
+      [id]: !prev[id],
     }));
+  };
+
+  const renderTree = (tree) => {
+    return tree.map((category) => (
+      <div key={category.id} className="category">
+        <div className="category-header">
+          <span className="caret" onClick={() => toggleCollapse(category.id)}>
+            {collapsedItems[category.id] ? '+' : '-'}
+          </span>
+          <span className="category-title">{category.title}</span>
+        </div>
+        {!collapsedItems[category.id] && (
+          <div className="category-content">
+            {category.nodes.map((node) => (
+              <div key={node.id} className="node">
+                <div className="node-header">
+                  <span className="caret" onClick={() => toggleCollapse(node.id)}>
+                    {collapsedItems[node.id] ? '+' : '-'}
+                  </span>
+                  <span className="node-title" onClick={() => onNodeClick(node)}>
+                    {node.title}
+                  </span>
+                </div>
+                {!collapsedItems[node.id] &&
+                  node.childNodes.map((childNode) => (
+                    <div
+                      key={childNode.id}
+                      className="child-node"
+                      onClick={() => onNodeClick(childNode)}
+                    >
+                      {childNode.title}
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ));
   };
 
   return (
     <div className="node-tree">
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      {categories.length === 0 ? (
+      {treeData.length === 0 ? (
         <p>No categories found. Start by adding new categories.</p>
       ) : (
-        <div className="tree">
-          {categories.map((category) => (
-            <div key={category.id} className="category">
-              <div className="category-header">
-                <span
-                  className="caret"
-                  onClick={() => toggleCollapse(category.id)}
-                >
-                  {collapsedCategories[category.id] ? '+' : '-'}
-                </span>
-                <span className="category-title">{category.title}</span>
-              </div>
-              {!collapsedCategories[category.id] && (
-                <div className="category-content">
-                  {nodes[category.id] &&
-                    nodes[category.id].map((node) => (
-                      <div
-                        key={node.id}
-                        className="node"
-                        onClick={() => onNodeClick(node)} // Trigger onNodeClick with the clicked node
-                      >
-                        {node.title}
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <div className="tree">{renderTree(treeData)}</div>
       )}
     </div>
   );
