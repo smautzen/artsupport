@@ -9,8 +9,8 @@ import helpIcon from '../assets/help.png';
 const ChatBox = forwardRef(({ projectId }, ref) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false); // Tracks if the system is processing
-  const [dots, setDots] = useState(''); // Tracks the animated dots
+  const [loading, setLoading] = useState(false);
+  const [dots, setDots] = useState('');
   const [selectedNodes, setSelectedNodes] = useState([]);
   const db = getFirestore();
   const messagesEndRef = useRef(null);
@@ -21,12 +21,12 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     if (loading) {
       interval = setInterval(() => {
         setDots((prev) => (prev === '...' ? '' : prev + '.'));
-      }, 500); // Update every 500ms
+      }, 500);
     } else {
-      setDots(''); // Reset dots when not loading
+      setDots('');
     }
 
-    return () => clearInterval(interval); // Clean up interval on unmount
+    return () => clearInterval(interval);
   }, [loading]);
 
   useEffect(() => {
@@ -55,12 +55,12 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
 
       if (latestMessage) {
         if (latestMessage.messageType === 'user') {
-          setLoading(true); // User message is the latest
+          setLoading(true);
         } else if (latestMessage.messageType === 'system') {
-          setLoading(false); // System response is the latest
+          setLoading(false);
         }
       } else {
-        setLoading(false); // No messages, no loading
+        setLoading(false);
       }
     });
 
@@ -77,7 +77,7 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     if (!input.trim()) return;
 
     try {
-      setLoading(true); // Show loading indicator
+      setLoading(true);
 
       const payload = {
         projectId,
@@ -90,10 +90,10 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
 
       await axios.post('http://localhost:4000/chat', payload);
 
-      setInput(''); // Clear input field
-      setSelectedNodes([]); // Clear selected nodes
+      setInput('');
+      setSelectedNodes([]);
     } catch (error) {
-      setLoading(false); // Reset on error
+      setLoading(false);
     }
   };
 
@@ -132,23 +132,22 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
       <div className="chatbox-messages">
         {messages
           .sort((a, b) => a.timestamp - b.timestamp)
-          .map((msg) => (
-            <div key={msg.id} className={`chat-message ${msg.messageType}`}>
-              <div className="timestamp">
-                {new Date(msg.timestamp).toLocaleString()}
-              </div>
+          .map((msg, index) => (
+            <div
+              key={msg.id}
+              className={`chat-message ${msg.messageType} ${
+                index === messages.length - 1 ? 'new-message' : ''
+              }`}
+            >
+              <div className="timestamp">{new Date(msg.timestamp).toLocaleString()}</div>
               {msg.content}
             </div>
           ))}
-        {/* Always include the "..." placeholder */}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
-  <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
-    {dots || '\u00A0'} {/* Fallback to non-breaking space when dots are empty */}
-  </div>
-</div>
-
-
-
+          <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
+            {dots || '\u00A0'}
+          </div>
+        </div>
         <div ref={messagesEndRef} />
       </div>
 
