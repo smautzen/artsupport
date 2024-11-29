@@ -150,7 +150,7 @@ app.delete('/projects/:id', async (req, res) => {
 });
 
 
-/* app.post('/chat', async (req, res) => {
+app.post('/chat', async (req, res) => {
   try {
     const { projectId, message, nodeReferences } = req.body;
 
@@ -201,8 +201,9 @@ app.delete('/projects/:id', async (req, res) => {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
-}); */
-app.post('/chat', async (req, res) => {
+});
+
+app.post('/testchat', async (req, res) => {
   try {
     const { projectId, message, nodeReferences } = req.body;
 

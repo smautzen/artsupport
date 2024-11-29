@@ -77,6 +77,9 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     if (!input.trim()) return;
 
     try {
+      setInput('');
+      setSelectedNodes([]);
+
       setLoading(true);
 
       const payload = {
@@ -89,9 +92,30 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
       };
 
       await axios.post('http://localhost:4000/chat', payload);
+    } catch (error) {
+      setLoading(false);
+    }
+  };
 
+  const sendTestMessage = async () => {
+    if (!input.trim()) return;
+
+    try {
       setInput('');
       setSelectedNodes([]);
+
+      setLoading(true);
+
+      const payload = {
+        projectId,
+        message: input,
+        nodeReferences: selectedNodes.map((node) => ({
+          id: node.id,
+          title: node.title,
+        })),
+      };
+
+      await axios.post('http://localhost:4000/testchat', payload);
     } catch (error) {
       setLoading(false);
     }
@@ -193,9 +217,11 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
           placeholder="Type your message..."
         />
         <button onClick={sendMessage}>Send</button>
+        <button onClick={sendTestMessage}>Send test message</button>
       </div>
     </div>
   );
 });
 
 export default ChatBox;
+
