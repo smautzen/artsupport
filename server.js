@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -18,6 +20,13 @@ admin.initializeApp({
 });
 
 const db = getFirestore();
+
+// OpenAI API setup
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 app.post('/projects', async (req, res) => {
   try {
@@ -143,39 +152,75 @@ app.delete('/projects/:id', async (req, res) => {
 
 app.post('/chat', async (req, res) => {
   try {
-      const { projectId, message, nodeReferences } = req.body;
+    const { projectId, message, nodeReferences } = req.body;
 
-      console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
+    console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
 
-      if (!projectId || !message) {
-          return res.status(400).send({ error: 'Project ID and message are required.' });
-      }
+    if (!projectId || !message) {
+      return res.status(400).send({ error: 'Project ID and message are required.' });
+    }
 
-      const references = Array.isArray(nodeReferences) ? nodeReferences : [];
+    const references = Array.isArray(nodeReferences) ? nodeReferences : [];
 
-      const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+    // Step 1: Save user message to Firestore
+    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+    const userMessageRef = await chatCollectionRef.add({
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      linkedNodes: references, // Save the references here
+    });
 
-      const userMessageRef = await chatCollectionRef.add({
-          messageType: 'user',
-          content: message,
-          timestamp: new Date().toISOString(),
-          linkedNodes: references, // Save the references here
+    // Step 2: Send the user message to OpenAI
+    let systemResponse;
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4', // Specify the model
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant for an art project tool.' },
+          { role: 'user', content: message },
+        ],
       });
+      systemResponse = response.choices[0].message.content; // Extract OpenAI's response
+    } catch (apiError) {
+      console.error('Error connecting to OpenAI:', apiError);
+      systemResponse = 'Error generating a response. Please try again.';
+    }
 
-      const systemResponse = `Responding to: "${message}"`;
-      await chatCollectionRef.add({
-          messageType: 'system',
-          content: systemResponse,
-          timestamp: new Date().toISOString(),
-          linkedNodes: [], // No references for system messages in this example
-      });
+    // Step 3: Save OpenAI's response to Firestore
+    await chatCollectionRef.add({
+      messageType: 'system',
+      content: systemResponse,
+      timestamp: new Date().toISOString(),
+      linkedNodes: [], // No references for system messages in this example
+    });
 
-      res.status(201).send({ messageId: userMessageRef.id });
+    // Step 4: Respond to the frontend
+    res.status(201).send({ messageId: userMessageRef.id });
   } catch (error) {
-      console.error('Error handling chat message:', error);
-      res.status(500).send({ error: error.message });
+    console.error('Error handling chat message:', error);
+    res.status(500).send({ error: error.message });
   }
 });
+
+
+app.get('/test-openai', async (req, res) => {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4', // Specify the model you want to use
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'What is the capital of France?' },
+      ],
+    });
+
+    res.status(200).send(response.choices[0].message.content);
+  } catch (error) {
+    console.error('Error connecting to OpenAI API:', error);
+    res.status(500).send({ error: 'Failed to connect to OpenAI API.' });
+  }
+});
+
 
 
 // Start server
