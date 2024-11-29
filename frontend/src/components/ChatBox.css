@@ -204,3 +204,30 @@
   color: #666; /* Set a subtle color for the description */
   margin-bottom: 10px; /* Adds spacing above the NodeTree */
 }
+
+.chat-message.loading {
+  display: none; /* Hidden by default */
+  text-align: left; /* Align the message to the left */
+  color: #888; /* Subtle gray color for the dots */
+  font-style: italic; /* Optional: italicize for style */
+  font-size: 1rem; /* Match the font size of chat messages */
+  margin: 10px 0; /* Add vertical spacing */
+  padding: 8px 12px; /* Match the padding of system messages */
+  border-radius: 5px; /* Rounded edges */
+  background-color: #f1f1f1; /* Light background for visibility */
+  max-width: 65%; /* Match the max width of system messages */
+  align-self: flex-start; /* Align to the left like system messages */
+}
+
+.chat-message.loading.visible {
+  display: block; /* Show when loading is true */
+}
+
+.chat-message.loading.hidden {
+  display: none; /* Fully hide when loading is false */
+}
+
+
+
+
+

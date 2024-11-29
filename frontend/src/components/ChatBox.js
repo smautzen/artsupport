@@ -6,13 +6,28 @@ import './ChatBox.css';
 import chatIcon from '../assets/chat.png';
 import helpIcon from '../assets/help.png';
 
-// Forward ref to expose methods
 const ChatBox = forwardRef(({ projectId }, ref) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [selectedNodes, setSelectedNodes] = useState([]); // Internal state for selected nodes
+  const [loading, setLoading] = useState(false); // Tracks if the system is processing
+  const [dots, setDots] = useState(''); // Tracks the animated dots
+  const [selectedNodes, setSelectedNodes] = useState([]);
   const db = getFirestore();
   const messagesEndRef = useRef(null);
+
+  // Animate dots when loading
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      interval = setInterval(() => {
+        setDots((prev) => (prev === '...' ? '' : prev + '.'));
+      }, 500); // Update every 500ms
+    } else {
+      setDots(''); // Reset dots when not loading
+    }
+
+    return () => clearInterval(interval); // Clean up interval on unmount
+  }, [loading]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -32,7 +47,21 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
             : 0,
         };
       });
-      setMessages(updatedMessages);
+
+      const sortedMessages = updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
+      setMessages(sortedMessages);
+
+      const latestMessage = sortedMessages[sortedMessages.length - 1];
+
+      if (latestMessage) {
+        if (latestMessage.messageType === 'user') {
+          setLoading(true); // User message is the latest
+        } else if (latestMessage.messageType === 'system') {
+          setLoading(false); // System response is the latest
+        }
+      } else {
+        setLoading(false); // No messages, no loading
+      }
     });
 
     return () => unsubscribe();
@@ -48,7 +77,8 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     if (!input.trim()) return;
 
     try {
-      // Construct the payload with selectedNodes
+      setLoading(true); // Show loading indicator
+
       const payload = {
         projectId,
         message: input,
@@ -58,15 +88,12 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
         })),
       };
 
-      console.log('Payload sent to server:', payload); // Debug
-
-      // Send the message
       await axios.post('http://localhost:4000/chat', payload);
 
-      setInput(''); // Clear the input field
+      setInput(''); // Clear input field
       setSelectedNodes([]); // Clear selected nodes
     } catch (error) {
-      console.error('Error sending message to server:', error);
+      setLoading(false); // Reset on error
     }
   };
 
@@ -74,7 +101,7 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     setSelectedNodes((prevNodes) => {
       const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
       if (!isAlreadySelected) {
-        return [...prevNodes, node]; // Add the node if not already selected
+        return [...prevNodes, node];
       }
       return prevNodes;
     });
@@ -84,7 +111,6 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     setSelectedNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
   };
 
-  // Expose methods via ref
   useImperativeHandle(ref, () => ({
     addNode,
   }));
@@ -93,11 +119,15 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
     <div className="chatbox">
       <div className="chat-header">
         <h2>Chat</h2>
-        <img src={chatIcon} alt={`Chat Icon`} className="chat-icon" />
+        <img src={chatIcon} alt="Chat Icon" className="chat-icon" />
       </div>
       <div className="space-info">
-        <strong><span className="chat-description">Where we bring elements from the spaces together to explore new possibilites (graphic connecting the spaces to showcase?)</span></strong>
-        <img src={helpIcon} alt={`help`} className="help-icon" />
+        <strong>
+          <span className="chat-description">
+            Where we bring elements from the spaces together to explore new possibilities (graphic connecting the spaces to showcase?)
+          </span>
+        </strong>
+        <img src={helpIcon} alt="Help Icon" className="help-icon" />
       </div>
       <div className="chatbox-messages">
         {messages
@@ -110,23 +140,42 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
               {msg.content}
             </div>
           ))}
+        {/* Always include the "..." placeholder */}
+        <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
+  <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
+    {dots || '\u00A0'} {/* Fallback to non-breaking space when dots are empty */}
+  </div>
+</div>
+
+
+
         <div ref={messagesEndRef} />
       </div>
 
       <div className="action-div">
-        {selectedNodes.length > 0 && <div className="nodes-container">
-          <div className="nodes-scrollable">
-            {selectedNodes.map((node) => (
-              <div key={node.id} className="node-item">
-                <div className="node-name" style={{backgroundColor: node.space === "material" ? "#007bff" : "#28a745"}}>
-                  {node.title}</div>
-                <div className="node-delete">
-                  <button className="node-delete-btn" onClick={() => removeNode(node.id)}>x</button>
+        {selectedNodes.length > 0 && (
+          <div className="nodes-container">
+            <div className="nodes-scrollable">
+              {selectedNodes.map((node) => (
+                <div key={node.id} className="node-item">
+                  <div
+                    className="node-name"
+                    style={{
+                      backgroundColor: node.space === 'material' ? '#007bff' : '#28a745',
+                    }}
+                  >
+                    {node.title}
+                  </div>
+                  <div className="node-delete">
+                    <button className="node-delete-btn" onClick={() => removeNode(node.id)}>
+                      x
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>}
+        )}
         <button className="generate-images-btn">Generate images</button>
         <button className="explore-concepts-btn">Explore concepts</button>
         {selectedNodes.length === 0 && <div>Click a node to attach it to your message!</div>}

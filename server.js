@@ -150,7 +150,7 @@ app.delete('/projects/:id', async (req, res) => {
 });
 
 
-app.post('/chat', async (req, res) => {
+/* app.post('/chat', async (req, res) => {
   try {
     const { projectId, message, nodeReferences } = req.body;
 
@@ -201,7 +201,48 @@ app.post('/chat', async (req, res) => {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
+}); */
+app.post('/chat', async (req, res) => {
+  try {
+    const { projectId, message, nodeReferences } = req.body;
+
+    console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
+
+    if (!projectId || !message) {
+      return res.status(400).send({ error: 'Project ID and message are required.' });
+    }
+
+    const references = Array.isArray(nodeReferences) ? nodeReferences : [];
+
+    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+
+    // Save the user message
+    const userMessageRef = await chatCollectionRef.add({
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      linkedNodes: references, // Save the references here
+    });
+
+    // Simulate a 5-second delay
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    // Generate the system response
+    const systemResponse = `Responding to: "${message}"`;
+    await chatCollectionRef.add({
+      messageType: 'system',
+      content: systemResponse,
+      timestamp: new Date().toISOString(),
+      linkedNodes: [], // No references for system messages in this example
+    });
+
+    res.status(201).send({ messageId: userMessageRef.id });
+  } catch (error) {
+    console.error('Error handling chat message:', error);
+    res.status(500).send({ error: error.message });
+  }
 });
+
 
 
 app.get('/test-openai', async (req, res) => {
