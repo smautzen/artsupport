@@ -230,19 +230,63 @@ app.post('/testchat', async (req, res) => {
 
     // Generate the system response
     const systemResponse = `Responding to: "${message}"`;
+
+    // Generate suggestions
+    const suggestions = [
+      {
+        space: 'material',
+        type: 'category',
+        name: 'Brush Styles',
+        title: 'Explore different brush techniques',
+        nodes: [
+          {
+            type: 'text',
+            name: 'Watercolor Brushes',
+            title: 'Brushes designed for soft, flowing effects'
+          },
+          {
+            type: 'text',
+            name: 'Oil Brushes',
+            title: 'Thick, textured strokes for oil-like effects'
+          }
+        ]
+      },
+      {
+        space: 'conceptual',
+        type: 'category',
+        name: 'Mood Inspiration',
+        title: 'Concepts for evoking specific emotions',
+        nodes: [
+          {
+            type: 'text',
+            name: 'Serenity',
+            title: 'Ideas for creating a peaceful atmosphere'
+          },
+          {
+            type: 'text',
+            name: 'Tension',
+            title: 'Techniques to depict dramatic or intense moments'
+          }
+        ]
+      }
+    ];
+
+    // Save the system response and suggestions
     await chatCollectionRef.add({
       messageType: 'system',
       content: systemResponse,
       timestamp: new Date().toISOString(),
       linkedNodes: [], // No references for system messages in this example
+      suggestions: suggestions // Add the generated suggestions
     });
 
-    res.status(201).send({ messageId: userMessageRef.id });
+    res.status(201).send({ messageId: userMessageRef.id, suggestions });
   } catch (error) {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
 });
+
 
 
 
@@ -262,6 +306,48 @@ app.get('/test-openai', async (req, res) => {
     res.status(500).send({ error: 'Failed to connect to OpenAI API.' });
   }
 });
+
+app.post('/likeSuggestion', async (req, res) => {
+  console.log('Request body:', req.body);
+  try {
+    const { projectId, messageId, suggestionIndex } = req.body;
+
+    if (!projectId || !messageId || suggestionIndex === undefined) {
+      return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
+    }
+
+    const messageRef = db
+      .collection('projects')
+      .doc(projectId)
+      .collection('chat')
+      .doc(messageId);
+
+    // Retrieve the message document
+    const messageDoc = await messageRef.get();
+    if (!messageDoc.exists) {
+      return res.status(404).send({ error: 'Message not found.' });
+    }
+
+    const messageData = messageDoc.data();
+
+    // Check if the suggestions array exists
+    if (!Array.isArray(messageData.suggestions) || !messageData.suggestions[suggestionIndex]) {
+      return res.status(400).send({ error: 'Invalid suggestion index.' });
+    }
+
+    // Update the liked status of the specific suggestion
+    messageData.suggestions[suggestionIndex].liked = true;
+
+    // Update the document in Firestore
+    await messageRef.update({ suggestions: messageData.suggestions });
+
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.error('Error liking suggestion:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
 
 
 

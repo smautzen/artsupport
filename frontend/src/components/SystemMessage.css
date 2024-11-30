@@ -1,0 +1,54 @@
+.system-message {
+    background-color: #f9f9f9;
+    border-left: 4px solid #007bff;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .system-message h4 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    color: #007bff;
+  }
+  
+  .suggestion {
+    margin-bottom: 15px;
+  }
+  
+  .item-title {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .highlight-button {
+    background: none;
+    border: 1px solid #007bff;
+    border-radius: 3px;
+    padding: 5px 10px;
+    color: #007bff;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .highlight-button:hover {
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  .highlight-button:disabled {
+    cursor: not-allowed;
+  }
+  
+  .highlight-button.liked {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+  }
+  
+  
+  
