@@ -9,8 +9,10 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
     // Initialize liked suggestions from payload
     if (payload && Array.isArray(payload)) {
       const likedData = payload.reduce((acc, item, index) => {
+        // Check if any child node is liked
+        const anyNodeLiked = (item.nodes || []).some((node) => node.liked);
         acc[index] = {
-          liked: item.liked || false,
+          liked: item.liked || anyNodeLiked, // Force category as liked if any child node is liked
           nodes: (item.nodes || []).reduce((nodeAcc, node) => {
             nodeAcc[node.id] = node.liked || false;
             return nodeAcc;
@@ -25,6 +27,8 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
   const handleLike = async (index, nodeId = null) => {
     try {
       console.log('Clicked Node ID:', nodeId);
+      console.log('Parent Category Index:', index);
+
       const suggestion = payload[index];
 
       if (!suggestion) {
@@ -34,7 +38,6 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
 
       let requestBody;
 
-      // If a node is clicked
       if (nodeId) {
         const node = suggestion.nodes.find((n) => n.id === nodeId); // Use ID to find the node
 
@@ -50,42 +53,27 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
           messageId,
           suggestionIndex: index,
           type: 'node',
-          title: node.title, // Node-specific data
+          nodeId: node.id, // Include node ID
+          categoryId: suggestion.id, // Include parent category ID
+          title: node.title,
           description: node.description || 'No description provided',
-          categoryTitle: suggestion.title, // Parent category title
+          categoryTitle: suggestion.title,
           categoryDescription: suggestion.description || 'No description available',
         };
 
-        // Update local state for the node
-        setLikedSuggestions((prev) => ({
-          ...prev,
-          [index]: {
-            ...prev[index],
-            nodes: {
-              ...prev[index]?.nodes,
-              [nodeId]: true,
-            },
-          },
-        }));
+        console.log('Parent Category Title:', suggestion.title);
       } else {
-        // If a category is clicked
         requestBody = {
           projectId,
           messageId,
           suggestionIndex: index,
           type: 'category',
+          categoryId: suggestion.id, // Include category ID
           title: suggestion.title,
           description: suggestion.description || 'No description provided',
         };
 
-        // Update local state for the category
-        setLikedSuggestions((prev) => ({
-          ...prev,
-          [index]: {
-            ...prev[index],
-            liked: true,
-          },
-        }));
+        console.log('Category Title:', suggestion.title);
       }
 
       console.log('Request payload before sending:', requestBody);
