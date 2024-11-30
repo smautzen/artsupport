@@ -28,6 +28,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url} - Body:`, req.body);
+  next();
+});
+
+
 app.post('/projects', async (req, res) => {
   try {
     const { name, description, includeSampleData } = req.body;
@@ -203,81 +209,78 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
+
+
 app.post('/testchat', async (req, res) => {
   try {
     const { projectId, message, nodeReferences } = req.body;
-
-    console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
 
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
 
-    const references = Array.isArray(nodeReferences) ? nodeReferences : [];
-
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
 
-    // Save the user message
     const userMessageRef = await chatCollectionRef.add({
       messageType: 'user',
       content: message,
       timestamp: new Date().toISOString(),
-      linkedNodes: references, // Save the references here
+      linkedNodes: nodeReferences || [],
     });
 
-    // Simulate a 5-second delay
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    // Generate the system response
     const systemResponse = `Responding to: "${message}"`;
 
-    // Generate suggestions
     const suggestions = [
       {
+        id: uuidv4(), // Unique ID for the suggestion
         space: 'material',
         type: 'category',
-        name: 'Brush Styles',
-        title: 'Explore different brush techniques',
+        title: 'Brush Styles',
+        description: 'Explore different brush techniques',
         nodes: [
           {
+            id: uuidv4(), // Unique ID for the node
             type: 'text',
-            name: 'Watercolor Brushes',
-            title: 'Brushes designed for soft, flowing effects'
+            title: 'Watercolor Brushes',
+            description: 'Brushes designed for soft, flowing effects',
           },
           {
+            id: uuidv4(), // Unique ID for the node
             type: 'text',
-            name: 'Oil Brushes',
-            title: 'Thick, textured strokes for oil-like effects'
-          }
-        ]
+            title: 'Oil Brushes',
+            description: 'Thick, textured strokes for oil-like effects',
+          },
+        ],
       },
       {
+        id: uuidv4(), // Unique ID for the suggestion
         space: 'conceptual',
         type: 'category',
-        name: 'Mood Inspiration',
-        title: 'Concepts for evoking specific emotions',
+        title: 'Mood Inspiration',
+        description: 'Concepts for evoking specific emotions',
         nodes: [
           {
+            id: uuidv4(), // Unique ID for the node
             type: 'text',
-            name: 'Serenity',
-            title: 'Ideas for creating a peaceful atmosphere'
+            title: 'Serenity',
+            description: 'Ideas for creating a peaceful atmosphere',
           },
           {
+            id: uuidv4(), // Unique ID for the node
             type: 'text',
-            name: 'Tension',
-            title: 'Techniques to depict dramatic or intense moments'
-          }
-        ]
-      }
+            title: 'Tension',
+            description: 'Techniques to depict dramatic or intense moments',
+          },
+        ],
+      },
     ];
 
-    // Save the system response and suggestions
     await chatCollectionRef.add({
       messageType: 'system',
       content: systemResponse,
       timestamp: new Date().toISOString(),
-      linkedNodes: [], // No references for system messages in this example
-      suggestions: suggestions // Add the generated suggestions
+      suggestions: suggestions,
     });
 
     res.status(201).send({ messageId: userMessageRef.id, suggestions });
@@ -286,10 +289,6 @@ app.post('/testchat', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
-
-
-
-
 app.get('/test-openai', async (req, res) => {
   try {
     const response = await openai.chat.completions.create({
@@ -308,48 +307,87 @@ app.get('/test-openai', async (req, res) => {
 });
 
 app.post('/likeSuggestion', async (req, res) => {
-  console.log('Request body:', req.body);
   try {
-    const { projectId, messageId, suggestionIndex } = req.body;
+    const { projectId, messageId, suggestionIndex, type, title, description, categoryTitle, categoryDescription } = req.body;
 
     if (!projectId || !messageId || suggestionIndex === undefined) {
       return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
     }
 
-    const messageRef = db
-      .collection('projects')
-      .doc(projectId)
-      .collection('chat')
-      .doc(messageId);
-
-    // Retrieve the message document
+    const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
     const messageDoc = await messageRef.get();
     if (!messageDoc.exists) {
       return res.status(404).send({ error: 'Message not found.' });
     }
 
     const messageData = messageDoc.data();
+    const suggestion = messageData.suggestions[suggestionIndex];
 
-    // Check if the suggestions array exists
-    if (!Array.isArray(messageData.suggestions) || !messageData.suggestions[suggestionIndex]) {
+    if (!suggestion) {
       return res.status(400).send({ error: 'Invalid suggestion index.' });
     }
 
-    // Update the liked status of the specific suggestion
-    messageData.suggestions[suggestionIndex].liked = true;
-
-    // Update the document in Firestore
+    // Update liked status
+    if (type === 'category') {
+      suggestion.liked = true;
+    } else if (type === 'node') {
+      const node = suggestion.nodes.find((n) => n.title === title);
+      if (node) node.liked = true;
+    }
     await messageRef.update({ suggestions: messageData.suggestions });
+
+    const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
+
+    if (type === 'category') {
+      const categorySnapshot = await spaceCollectionRef.where('title', '==', title).get();
+
+      if (categorySnapshot.empty) {
+        console.log('Creating category:', title);
+        await spaceCollectionRef.add({
+          title,
+          description: description || 'No description available',
+          type: 'category',
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } else if (type === 'node') {
+      const categorySnapshot = await spaceCollectionRef.where('title', '==', categoryTitle).get();
+
+      if (categorySnapshot.empty) {
+        console.log('Creating parent category for node:', categoryTitle);
+        const categoryRef = await spaceCollectionRef.add({
+          title: categoryTitle,
+          description: categoryDescription || 'No description available',
+          type: 'category',
+          createdAt: new Date().toISOString(),
+        });
+
+        console.log('Adding node to new category:', title);
+        await categoryRef.collection('nodes').add({
+          title,
+          description: description || 'No description provided',
+          type: 'text', // Ensure correct type for nodes
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        const categoryDoc = categorySnapshot.docs[0];
+        console.log('Adding node to existing category:', title);
+
+        await categoryDoc.ref.collection('nodes').add({
+          title,
+          description: description || 'No description provided',
+          type: 'text', // Ensure correct type for nodes
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
 
     res.status(200).send({ success: true });
   } catch (error) {
-    console.error('Error liking suggestion:', error);
+    console.error('Error in /likeSuggestion:', error);
     res.status(500).send({ error: error.message });
   }
 });
-
-
-
 
 // Start server
 app.listen(port, () => {

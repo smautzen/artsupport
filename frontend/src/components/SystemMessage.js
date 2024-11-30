@@ -3,28 +3,96 @@ import axios from 'axios';
 import './SystemMessage.css';
 
 const SystemMessage = ({ payload, projectId, messageId }) => {
-  const [likedSuggestions, setLikedSuggestions] = useState([]);
+  const [likedSuggestions, setLikedSuggestions] = useState({});
 
   useEffect(() => {
-    // Extract the indices of liked suggestions from the payload
+    // Initialize liked suggestions from payload
     if (payload && Array.isArray(payload)) {
-      const likedIndices = payload
-        .map((item, index) => (item.liked ? index : null))
-        .filter((index) => index !== null); // Filter out null values
-      setLikedSuggestions(likedIndices);
+      const likedData = payload.reduce((acc, item, index) => {
+        acc[index] = {
+          liked: item.liked || false,
+          nodes: (item.nodes || []).reduce((nodeAcc, node) => {
+            nodeAcc[node.id] = node.liked || false;
+            return nodeAcc;
+          }, {}),
+        };
+        return acc;
+      }, {});
+      setLikedSuggestions(likedData);
     }
   }, [payload]);
 
-  const handleLike = async (index) => {
+  const handleLike = async (index, nodeId = null) => {
     try {
-      await axios.post('http://localhost:4000/likeSuggestion', {
-        projectId,
-        messageId,
-        suggestionIndex: index,
-      });
+      console.log('Clicked Node ID:', nodeId);
+      const suggestion = payload[index];
 
-      // Update the local state
-      setLikedSuggestions((prev) => [...prev, index]);
+      if (!suggestion) {
+        console.error('Invalid suggestion at index:', index);
+        return;
+      }
+
+      let requestBody;
+
+      // If a node is clicked
+      if (nodeId) {
+        const node = suggestion.nodes.find((n) => n.id === nodeId); // Use ID to find the node
+
+        if (!node) {
+          console.error('Node not found with ID:', nodeId);
+          return;
+        }
+
+        console.log('Node object:', node);
+
+        requestBody = {
+          projectId,
+          messageId,
+          suggestionIndex: index,
+          type: 'node',
+          title: node.title, // Node-specific data
+          description: node.description || 'No description provided',
+          categoryTitle: suggestion.title, // Parent category title
+          categoryDescription: suggestion.description || 'No description available',
+        };
+
+        // Update local state for the node
+        setLikedSuggestions((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            nodes: {
+              ...prev[index]?.nodes,
+              [nodeId]: true,
+            },
+          },
+        }));
+      } else {
+        // If a category is clicked
+        requestBody = {
+          projectId,
+          messageId,
+          suggestionIndex: index,
+          type: 'category',
+          title: suggestion.title,
+          description: suggestion.description || 'No description provided',
+        };
+
+        // Update local state for the category
+        setLikedSuggestions((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            liked: true,
+          },
+        }));
+      }
+
+      console.log('Request payload before sending:', requestBody);
+
+      const response = await axios.post('http://localhost:4000/likeSuggestion', requestBody);
+
+      console.log('Server response:', response.data);
     } catch (error) {
       console.error('Error liking suggestion:', error);
     }
@@ -35,23 +103,29 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
       <h4>Suggestions:</h4>
       {Array.isArray(payload) && payload.length > 0 ? (
         payload.map((item, index) => (
-          <div key={index} className="suggestion">
+          <div key={`suggestion-${index}`} className="suggestion">
             <button
-              className={`highlight-button ${likedSuggestions.includes(index) ? 'liked' : ''}`}
+              className={`highlight-button ${likedSuggestions[index]?.liked ? 'liked' : ''}`}
               onClick={() => handleLike(index)}
-              disabled={likedSuggestions.includes(index)}
+              disabled={likedSuggestions[index]?.liked}
             >
-              {item.name}
+              {item.title || 'Unnamed Suggestion'}
             </button>
-            <div className="item-title">{item.title}</div>
+            <div className="item-description">{item.description || 'No description available'}</div>
             <ul>
               {item.nodes &&
-                item.nodes.map((node, idx) => (
-                  <li key={idx}>
-                    <button className="highlight-button" onClick={() => console.log(node.name, node.id)}>
-                      {node.name}
+                item.nodes.map((node) => (
+                  <li key={`node-${node.id}`}>
+                    <button
+                      className={`highlight-button ${
+                        likedSuggestions[index]?.nodes?.[node.id] ? 'liked' : ''
+                      }`}
+                      onClick={() => handleLike(index, node.id)}
+                      disabled={likedSuggestions[index]?.nodes?.[node.id]}
+                    >
+                      {node.title || 'Unnamed Node'}
                     </button>{' '}
-                    - {node.title} ({node.type})
+                    - {node.description || 'No description'} ({node.type})
                   </li>
                 ))}
             </ul>
