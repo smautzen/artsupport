@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
@@ -22,8 +22,7 @@ const nodeTypeIcons = {
 const NodeTree = ({ projectId, space, onNodeClick }) => {
   const [treeData, setTreeData] = useState([]); // Hierarchical data for categories and nodes
   const [collapsedItems, setCollapsedItems] = useState({}); // State for collapsed items
-  const [flashingNodeId, setFlashingNodeId] = useState(null); // ID of the node to flash
-  const flashingNodeRef = useRef(null); // Reference to scroll the flashing node into view
+  const [animations, setAnimations] = useState([]); // Track multiple active animations
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -36,90 +35,66 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
       try {
         const spaceRef = collection(db, 'projects', projectId, space);
 
-        // Listen for changes to categories
-        onSnapshot(
-          spaceRef,
-          (snapshot) => {
-            const categories = snapshot.docs.map((categoryDoc) => ({
-              id: categoryDoc.id,
-              ...categoryDoc.data(),
-              nodes: [], // Placeholder for nodes
-            }));
+        onSnapshot(spaceRef, (snapshot) => {
+          const categories = snapshot.docs.map((categoryDoc) => ({
+            id: categoryDoc.id,
+            ...categoryDoc.data(),
+            nodes: [],
+          }));
 
-            categories.forEach((category) => {
-              const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
+          categories.forEach((category) => {
+            const nodesRef = collection(db, 'projects', projectId, space, category.id, 'nodes');
 
-              // Listen for changes to nodes in each category
-              onSnapshot(nodesRef, (nodesSnapshot) => {
-                const nodes = nodesSnapshot.docs.map((nodeDoc) => ({
-                  id: nodeDoc.id,
-                  ...nodeDoc.data(),
-                  childNodes: [], // Placeholder for child nodes
-                }));
+            onSnapshot(nodesRef, (nodesSnapshot) => {
+              const nodes = nodesSnapshot.docs.map((nodeDoc) => ({
+                id: nodeDoc.id,
+                ...nodeDoc.data(),
+                childNodes: [],
+              }));
 
-                nodes.forEach((node) => {
-                  const childNodesRef = collection(
-                    db,
-                    'projects',
-                    projectId,
-                    space,
-                    category.id,
-                    'nodes',
-                    node.id,
-                    'childNodes'
-                  );
-
-                  // Listen for changes to child nodes in each node
-                  onSnapshot(childNodesRef, (childNodesSnapshot) => {
-                    const childNodes = childNodesSnapshot.docs.map((childNodeDoc) => ({
-                      id: childNodeDoc.id,
-                      ...childNodeDoc.data(),
-                    }));
-
-                    // Update state with child nodes
-                    setTreeData((prevTree) =>
-                      prevTree.map((prevCategory) =>
-                        prevCategory.id === category.id
-                          ? {
-                              ...prevCategory,
-                              nodes: prevCategory.nodes.map((prevNode) =>
-                                prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
-                              ),
-                            }
-                          : prevCategory
-                      )
-                    );
-                  });
-                });
-
-                // Detect new nodes and set flashingNodeId
-                nodes.forEach((node) => {
-                  const isNewNode = !treeData.find((cat) =>
-                    cat.nodes.some((existingNode) => existingNode.id === node.id)
-                  );
-
-                  if (isNewNode) {
-                    setFlashingNodeId(node.id); // Mark the new node for flashing
-                  }
-                });
-
-                // Update state with nodes
-                setTreeData((prevTree) =>
-                  prevTree.map((prevCategory) =>
-                    prevCategory.id === category.id ? { ...prevCategory, nodes } : prevCategory
-                  )
+              nodes.forEach((node) => {
+                const childNodesRef = collection(
+                  db,
+                  'projects',
+                  projectId,
+                  space,
+                  category.id,
+                  'nodes',
+                  node.id,
+                  'childNodes'
                 );
-              });
-            });
 
-            // Set initial categories
-            setTreeData(categories);
-          },
-          (err) => {
-            console.error('Error fetching categories:', err);
-            setError('Failed to fetch categories.');
-          }
-        );
+                onSnapshot(childNodesRef, (childNodesSnapshot) => {
+                  const childNodes = childNodesSnapshot.docs.map((childNodeDoc) => ({
+                    id: childNodeDoc.id,
+                    ...childNodeDoc.data(),
+                  }));
+
+                  setTreeData((prevTree) =>
+                    prevTree.map((prevCategory) =>
+                      prevCategory.id === category.id
+                        ? {
+                            ...prevCategory,
+                            nodes: prevCategory.nodes.map((prevNode) =>
+                              prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
+                            ),
+                          }
+                        : prevCategory
+                    )
+                  );
+                });
+              });
+
+              setTreeData((prevTree) =>
+                prevTree.map((prevCategory) =>
+                  prevCategory.id === category.id ? { ...prevCategory, nodes } : prevCategory
+                )
+              );
+            });
+          });
+
+          setTreeData(categories);
+        });
       } catch (err) {
         console.error('Error fetching tree data:', err);
         setError('Failed to fetch tree data.');
@@ -129,15 +104,30 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     fetchTreeData();
   }, [projectId, space]);
 
-  useEffect(() => {
-    if (flashingNodeId && flashingNodeRef.current) {
-      flashingNodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => setFlashingNodeId(null), 1000); // Remove flashing effect after 1 second
-    }
-  }, [flashingNodeId]);
+  const handleNodeClick = (node, event) => {
+    const rect = event.target.getBoundingClientRect();
+    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left'; // Class name for direction
+    const animationId = Date.now(); // Unique ID for this animation
+
+    setAnimations((prevAnimations) => [
+      ...prevAnimations,
+      {
+        id: animationId,
+        title: node.title || 'Unnamed Node',
+        target: targetSpace,
+        startX: rect.left + rect.width / 2,
+        startY: rect.top + rect.height / 2,
+      },
+    ]);
+
+    setTimeout(() => {
+      setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
+    }, 1000); // Match animation duration
+
+    onNodeClick(node); // Invoke the callback for the clicked node
+  };
 
   const toggleCollapse = (id) => {
-    console.log('Toggling collapse for ID:', id);
     setCollapsedItems((prev) => ({
       ...prev,
       [id]: !prev[id],
@@ -162,16 +152,13 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
       };
 
       return (
-        <div
-          key={node.id}
-          className={`node ${node.id === flashingNodeId ? 'node-flash' : ''}`}
-          ref={node.id === flashingNodeId ? flashingNodeRef : null}
-        >
-          <div className="node-content">
+        <div key={node.id} className="node">
+          <div
+            className="node-content"
+            onClick={(event) => handleNodeClick(node, event)}
+          >
             <strong>
-              <span className="node-title" onClick={() => onNodeClick(node)}>
-                {node.title}
-              </span>
+              <span className="node-title">{node.title}</span>
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             <span className="caret" onClick={() => toggleCollapse(node.id)}>
@@ -211,6 +198,19 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
 
   return (
     <div className="node-tree">
+      <h4>Node Tree</h4>
+      {animations.map((animation) => (
+        <div
+          key={animation.id}
+          className={`phantom-saved phantom-${animation.target}`}
+          style={{
+            left: animation.startX,
+            top: animation.startY,
+          }}
+        >
+          {animation.title}
+        </div>
+      ))}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {treeData.length === 0 ? (
         <p>No categories found. Start by adding new categories.</p>

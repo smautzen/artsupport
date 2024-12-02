@@ -88,3 +88,53 @@
 .node-flash {
   animation: flash 1s ease-in-out;
 }
+
+@keyframes glide-saved-right {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(300px, 300px) scale(2); /* Move down and right */
+    opacity: 0;
+  }
+}
+
+@keyframes glide-saved-left {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-300px, 300px) scale(2); /* Move down and left */
+    opacity: 0;
+  }
+}
+
+.phantom-saved {
+  position: fixed; /* Ensure positioning relative to the viewport */
+  z-index: 9999;
+  background: rgba(200, 255, 200, 0.9); /* Slightly different background for saved nodes */
+  color: black;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  pointer-events: none;
+  white-space: nowrap;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+}
+
+.phantom-saved-right {
+  animation: glide-saved-right 1s forwards;
+}
+
+.phantom-saved-left {
+  animation: glide-saved-left 1s forwards;
+}
+
+
+
+
+
+
