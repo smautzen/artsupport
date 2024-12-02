@@ -205,10 +205,12 @@ app.post('/chat', async (req, res) => {
         title: suggestion.title,
         description: suggestion.description,
         reasoning: suggestion.reasoning || 'No reasoning provided',
+        space: suggestion.space,
         nodes: suggestion.nodes.map((node) => ({
           title: node.title,
           description: node.description || 'No description available',
           reasoning: node.reasoning || 'No reasoning provided',
+          space: suggestion.space,
           id: node.id || uuidv4(), // Generate a unique ID if it's missing
         })),
       };
@@ -472,7 +474,6 @@ const fetchOntology = async (projectId) => {
   }
 };
 
-
 const generateAssistantResponse = async (message, ontology, nodeReferences) => {
   try {
     let prompt;
@@ -494,10 +495,14 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
         Your task is to:
         1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
         2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well.
-        3. If it makes sense, suggest how the attached nodes and their child nodes could be explored in combination, ensuring the suggestions are contextually relevant to the project’s current focus.
-        4. Avoid suggesting unrelated nodes or categories. Make sure your suggestions align with the user’s project and the current ontology.
-        5. Any category suggestion should be supplied with a space attribute, depending on whether you judge it to fit best into the material or conceptual space. All children of the particular category should also share this space.
-        6. Return your response in the following JSON format:
+        3. For each category, node, and child node, assign a "space" attribute:
+           - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
+           - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
+           - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
+        4. Ensure that:
+           - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
+           - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
+        5. Return your response in the following JSON format:
         {
           "responseMessage": "Your primary response to the user.",
           "suggestions": [
@@ -510,13 +515,13 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
                 {
                   "title": "Name of the node",
                   "description": "Brief description of the node",
-                  "reasoning": "Why you suggested this node.",
+                  "reasoning": "Why you suggested this node",
                   "space": "same as parent",
                   "childNodes": [
                     {
                       "title": "Name of the child node",
                       "description": "Brief description of the child node",
-                      "reasoning": "Why you suggested this child node.",
+                      "reasoning": "Why you suggested this child node",
                       "space": "same as parent"
                     }
                   ]
@@ -540,10 +545,14 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
         Your task is to:
         1. Focus on the user's message and provide suggestions based on the context of the current project.
         2. Suggest categories or nodes that align with the user's message and the existing ontology.
-        3. If the suggested node has child nodes, suggest how those could be explored as well.
-        4. Provide reasoning for each suggestion to explain its relevance to the user's project.
-        5. Any category suggestion should be supplied with a space attribute, depending on whether you judge it to fit best into the material or conceptual space. All children of the particular category should also share this space.
-        6. Return your response in the following JSON format:
+        3. For each category, node, and child node, assign a "space" attribute:
+           - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
+           - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
+           - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
+        4. Ensure that:
+           - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
+           - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
+        5. Return your response in the following JSON format:
         {
           "responseMessage": "Your primary response to the user.",
           "suggestions": [
@@ -587,8 +596,6 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
     throw new Error('Failed to generate assistant response.');
   }
 };
-
-
 
 // Start server
 app.listen(port, () => {
