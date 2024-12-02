@@ -6,7 +6,7 @@ import materialSpaceIcon from '../assets/materialspace.png';
 import conceptualSpaceIcon from '../assets/conceptualspace.png';
 import helpIcon from '../assets/help.png';
 
-const SpaceBox = ({ projectId, spaceName, onNodeClick }) => {
+const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDeselect }) => {
   const icon = spaceName.toLowerCase() === 'material' ? materialSpaceIcon : conceptualSpaceIcon;
 
   // Set the description based on spaceName
@@ -22,13 +22,17 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick }) => {
         <img src={icon} alt={`${spaceName} Icon`} className="space-icon" />
       </div>
       <div className="space-info">
-      <strong><span className="space-description">{description}</span></strong>
-      <img src={helpIcon} alt={`${spaceName} help`} className="help-icon" />
+        <strong>
+          <span className="space-description">{description}</span>
+        </strong>
+        <img src={helpIcon} alt={`${spaceName} help`} className="help-icon" />
       </div>
       <NodeTree
         projectId={projectId}
         space={spaceName.toLowerCase()}
         onNodeClick={onNodeClick}
+        selectedNodes={selectedNodes} // Pass selected nodes to NodeTree
+        onNodeDeselect={onNodeDeselect} // Handle deselection in NodeTree
       />
     </div>
   );

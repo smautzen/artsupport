@@ -19,10 +19,10 @@ const nodeTypeIcons = {
   palette: paletteNodeIcon,
 };
 
-const NodeTree = ({ projectId, space, onNodeClick }) => {
-  const [treeData, setTreeData] = useState([]); // Hierarchical data for categories and nodes
-  const [collapsedItems, setCollapsedItems] = useState({}); // State for collapsed items
-  const [animations, setAnimations] = useState([]); // Track multiple active animations
+const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect }) => {
+  const [treeData, setTreeData] = useState([]);
+  const [collapsedItems, setCollapsedItems] = useState({});
+  const [animations, setAnimations] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -105,9 +105,15 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
   }, [projectId, space]);
 
   const handleNodeClick = (node, event) => {
+    const isSelected = selectedNodes.some((selected) => selected.id === node.id);
+    if (isSelected) {
+      onNodeDeselect(node.id);
+      return;
+    }
+
     const rect = event.target.getBoundingClientRect();
-    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left'; // Class name for direction
-    const animationId = Date.now(); // Unique ID for this animation
+    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left';
+    const animationId = Date.now();
 
     setAnimations((prevAnimations) => [
       ...prevAnimations,
@@ -122,15 +128,21 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
 
     setTimeout(() => {
       setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
-    }, 1000); // Match animation duration
+    }, 1000);
 
-    onNodeClick(node); // Invoke the callback for the clicked node
+    onNodeClick(node);
   };
 
   const handleCategoryClick = (category, event) => {
+    const isSelected = selectedNodes.some((selected) => selected.id === category.id);
+    if (isSelected) {
+      onNodeDeselect(category.id);
+      return;
+    }
+
     const rect = event.target.getBoundingClientRect();
-    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left'; // Class name for direction
-    const animationId = Date.now(); // Unique ID for this animation
+    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left';
+    const animationId = Date.now();
 
     setAnimations((prevAnimations) => [
       ...prevAnimations,
@@ -145,9 +157,9 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
 
     setTimeout(() => {
       setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
-    }, 1000); // Match animation duration
+    }, 1000);
 
-    onNodeClick(category); // Invoke the callback for the clicked category
+    onNodeClick(category);
   };
 
   const toggleCollapse = (id) => {
@@ -157,8 +169,8 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     }));
   };
 
-  const renderNodes = (nodes) => {
-    return nodes.map((node) => {
+  const renderNodes = (nodes) =>
+    nodes.map((node) => {
       const icon = nodeTypeIcons[node.type] || textNodeIcon;
 
       const renderNodeComponent = (node) => {
@@ -186,8 +198,6 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
               </span>
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
-            <span className="caret" onClick={() => toggleCollapse(node.id)}>
-              {collapsedItems[node.id] ? '+' : '-'}</span>
             {renderNodeComponent(node)}
           </div>
           {!collapsedItems[node.id] &&
@@ -198,10 +208,9 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
         </div>
       );
     });
-  };
 
-  const renderTree = (tree) => {
-    return tree.map((category) => (
+  const renderTree = (tree) =>
+    tree.map((category) => (
       <div key={category.id} className="category">
         <div className="category-content">
           <span
@@ -223,29 +232,19 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
         )}
       </div>
     ));
-  };
 
   return (
     <div className="node-tree">
-      <h4>Node Tree</h4>
+      {treeData.length === 0 ? <p>No categories found</p> : renderTree(treeData)}
       {animations.map((animation) => (
         <div
           key={animation.id}
           className={`phantom-saved phantom-${animation.target}`}
-          style={{
-            left: animation.startX,
-            top: animation.startY,
-          }}
+          style={{ left: animation.startX, top: animation.startY }}
         >
           {animation.title}
         </div>
       ))}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {treeData.length === 0 ? (
-        <p>No categories found. Start by adding new categories.</p>
-      ) : (
-        <div className="tree">{renderTree(treeData)}</div>
-      )}
     </div>
   );
 };

@@ -7,7 +7,7 @@ import SystemMessage from './SystemMessage';
 import chatIcon from '../assets/chat.png';
 import helpIcon from '../assets/help.png';
 
-const ChatBox = forwardRef(({ projectId }, ref) => {
+const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,9 +32,9 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
 
   useEffect(() => {
     if (!projectId) return;
-  
+
     const chatCollectionRef = collection(db, 'projects', projectId, 'chat');
-  
+
     const unsubscribe = onSnapshot(chatCollectionRef, (snapshot) => {
       const updatedMessages = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -48,15 +48,12 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
             : 0,
         };
       });
-  
+
       const sortedMessages = updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
       setMessages(sortedMessages);
-  
-      // Print the updated messages to the console
-      console.log('Updated messages:', sortedMessages);
-  
+
       const latestMessage = sortedMessages[sortedMessages.length - 1];
-  
+
       if (latestMessage) {
         if (latestMessage.messageType === 'user') {
           setLoading(true);
@@ -67,10 +64,10 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
         setLoading(false);
       }
     });
-  
+
     return () => unsubscribe();
   }, [db, projectId]);
-  
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -136,7 +133,13 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
   };
 
   const removeNode = (nodeId) => {
-    setSelectedNodes((prevNodes) => prevNodes.filter((node) => node.id !== nodeId));
+    setSelectedNodes((prevNodes) => {
+      const updatedNodes = prevNodes.filter((node) => node.id !== nodeId);
+      if (onNodeDeselect) {
+        onNodeDeselect(nodeId); // Notify parent about deselection
+      }
+      return updatedNodes;
+    });
   };
 
   useImperativeHandle(ref, () => ({
@@ -145,26 +148,21 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
 
   return (
     <div className="chatbox">
-      {/* Chat header with title and icon */}
       <div className="chat-header">
         <h2>Chat</h2>
         <img src={chatIcon} alt="Chat Icon" className="chat-icon" />
       </div>
-  
-      {/* Space info with a description */}
       <div className="space-info">
         <strong>
           <span className="chat-description">
-            Where we bring elements from the spaces together to explore new possibilities (graphic connecting the spaces to showcase?)
+            Where we bring elements from the spaces together to explore new possibilities.
           </span>
         </strong>
         <img src={helpIcon} alt="Help Icon" className="help-icon" />
       </div>
-  
-      {/* Chat messages section */}
       <div className="chatbox-messages">
         {messages
-          .sort((a, b) => a.timestamp - b.timestamp) // Sort messages by timestamp
+          .sort((a, b) => a.timestamp - b.timestamp)
           .map((msg, index) => (
             <div
               key={msg.id}
@@ -173,35 +171,26 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
               }`}
             >
               <div className="timestamp">
-                {/* Display the timestamp of the message */}
                 {new Date(msg.timestamp).toLocaleString()}
               </div>
               {msg.messageType === 'system' && msg.suggestions ? (
-                // If the message is a system message with suggestions, render the SystemMessage component
                 <SystemMessage
-  payload={msg.suggestions}
-  projectId={projectId} // Pass the projectId from ChatBox
-  messageId={msg.id}    // Pass the message ID for the current message
-/>
+                  payload={msg.suggestions}
+                  projectId={projectId}
+                  messageId={msg.id}
+                />
               ) : (
-                // Otherwise, display the message content
                 <div>{msg.content}</div>
               )}
             </div>
           ))}
-  
-        {/* Loading animation for system responses */}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
           <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
-            {dots || '\u00A0'} {/* Dots animation for loading */}
+            {dots || '\u00A0'}
           </div>
         </div>
-  
-        {/* Scroll-to-bottom reference for new messages */}
         <div ref={messagesEndRef} />
       </div>
-  
-      {/* Actions section with nodes and additional buttons */}
       <div className="action-div">
         {selectedNodes.length > 0 && (
           <div className="nodes-container">
@@ -229,15 +218,10 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
             </div>
           </div>
         )}
-        {/* Action buttons */}
         <button className="generate-images-btn">Generate images</button>
         <button className="explore-concepts-btn">Explore concepts</button>
-        {selectedNodes.length === 0 && (
-          <div>Click a node to attach it to your message!</div>
-        )}
+        {selectedNodes.length === 0 && <div>Click a node to attach it to your message!</div>}
       </div>
-  
-      {/* Chat input section */}
       <div className="chatbox-input">
         <textarea
           value={input}
@@ -245,7 +229,7 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              sendMessage(); // Send message on Enter key press
+              sendMessage();
             }
           }}
           placeholder="Type your message..."
@@ -255,8 +239,6 @@ const ChatBox = forwardRef(({ projectId }, ref) => {
       </div>
     </div>
   );
-  
 });
 
 export default ChatBox;
-
