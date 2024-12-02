@@ -51,6 +51,49 @@
     cursor: not-allowed;
   }
   
+  @keyframes glide-left {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-300px, -100px) scale(2);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes glide-right {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(300px, -100px) scale(2);
+      opacity: 0;
+    }
+  }
+  
+  .phantom {
+    position: fixed;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.9);
+    color: black;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    pointer-events: none;
+    white-space: nowrap;
+    animation-duration: 1s; /* Reduce duration for faster animation */
+  }
+  
+  .phantom-left {
+    animation: glide-left 1s ease-in-out forwards;
+  }
+  
+  .phantom-right {
+    animation: glide-right 1s ease-in-out forwards;
+  }
+  
   
   
   
