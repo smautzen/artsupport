@@ -127,6 +127,29 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     onNodeClick(node); // Invoke the callback for the clicked node
   };
 
+  const handleCategoryClick = (category, event) => {
+    const rect = event.target.getBoundingClientRect();
+    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left'; // Class name for direction
+    const animationId = Date.now(); // Unique ID for this animation
+
+    setAnimations((prevAnimations) => [
+      ...prevAnimations,
+      {
+        id: animationId,
+        title: category.title || 'Unnamed Category',
+        target: targetSpace,
+        startX: rect.left + rect.width / 2,
+        startY: rect.top + rect.height / 2,
+      },
+    ]);
+
+    setTimeout(() => {
+      setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
+    }, 1000); // Match animation duration
+
+    onNodeClick(category); // Invoke the callback for the clicked category
+  };
+
   const toggleCollapse = (id) => {
     setCollapsedItems((prev) => ({
       ...prev,
@@ -153,17 +176,18 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
 
       return (
         <div key={node.id} className="node">
-          <div
-            className="node-content"
-            onClick={(event) => handleNodeClick(node, event)}
-          >
+          <div className="node-content">
             <strong>
-              <span className="node-title">{node.title}</span>
+              <span
+                className="node-title"
+                onClick={(event) => handleNodeClick(node, event)}
+              >
+                {node.title}
+              </span>
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             <span className="caret" onClick={() => toggleCollapse(node.id)}>
-              {collapsedItems[node.id] ? '+' : '-'}
-            </span>
+              {collapsedItems[node.id] ? '+' : '-'}</span>
             {renderNodeComponent(node)}
           </div>
           {!collapsedItems[node.id] &&
@@ -180,7 +204,12 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     return tree.map((category) => (
       <div key={category.id} className="category">
         <div className="category-content">
-          <span className="category-title">{category.title}</span>
+          <span
+            className="category-title"
+            onClick={(event) => handleCategoryClick(category, event)}
+          >
+            {category.title}
+          </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
           <span className="caret" onClick={() => toggleCollapse(category.id)}>
             {collapsedItems[category.id] ? '+' : '-'}
