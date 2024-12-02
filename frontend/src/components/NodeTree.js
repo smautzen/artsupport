@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
@@ -22,6 +22,8 @@ const nodeTypeIcons = {
 const NodeTree = ({ projectId, space, onNodeClick }) => {
   const [treeData, setTreeData] = useState([]); // Hierarchical data for categories and nodes
   const [collapsedItems, setCollapsedItems] = useState({}); // State for collapsed items
+  const [flashingNodeId, setFlashingNodeId] = useState(null); // ID of the node to flash
+  const flashingNodeRef = useRef(null); // Reference to scroll the flashing node into view
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -90,6 +92,17 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
                   });
                 });
 
+                // Detect new nodes and set flashingNodeId
+                nodes.forEach((node) => {
+                  const isNewNode = !treeData.find((cat) =>
+                    cat.nodes.some((existingNode) => existingNode.id === node.id)
+                  );
+
+                  if (isNewNode) {
+                    setFlashingNodeId(node.id); // Mark the new node for flashing
+                  }
+                });
+
                 // Update state with nodes
                 setTreeData((prevTree) =>
                   prevTree.map((prevCategory) =>
@@ -116,6 +129,13 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
     fetchTreeData();
   }, [projectId, space]);
 
+  useEffect(() => {
+    if (flashingNodeId && flashingNodeRef.current) {
+      flashingNodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => setFlashingNodeId(null), 1000); // Remove flashing effect after 1 second
+    }
+  }, [flashingNodeId]);
+
   const toggleCollapse = (id) => {
     console.log('Toggling collapse for ID:', id);
     setCollapsedItems((prev) => ({
@@ -126,9 +146,8 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
 
   const renderNodes = (nodes) => {
     return nodes.map((node) => {
-      const icon = nodeTypeIcons[node.type] || textNodeIcon; // Default to textNodeIcon if type is missing
-  
-      // Function to dynamically render the correct component
+      const icon = nodeTypeIcons[node.type] || textNodeIcon;
+
       const renderNodeComponent = (node) => {
         switch (node.type) {
           case 'text':
@@ -141,52 +160,44 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
             return <div>Unsupported node type: {node.type}</div>;
         }
       };
-  
+
       return (
-        <div key={node.id} className="node">
+        <div
+          key={node.id}
+          className={`node ${node.id === flashingNodeId ? 'node-flash' : ''}`}
+          ref={node.id === flashingNodeId ? flashingNodeRef : null}
+        >
           <div className="node-content">
             <strong>
               <span className="node-title" onClick={() => onNodeClick(node)}>
                 {node.title}
               </span>
             </strong>
-            <img
-              src={icon}
-              alt={`${node.type} Icon`}
-              className="node-icon"
-            />
+            <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             <span className="caret" onClick={() => toggleCollapse(node.id)}>
               {collapsedItems[node.id] ? '+' : '-'}
             </span>
-            {/* Dynamically render the node component */}
             {renderNodeComponent(node)}
           </div>
           {!collapsedItems[node.id] &&
             node.childNodes &&
             node.childNodes.length > 0 && (
-              <div className="node-children">
-                {renderNodes(node.childNodes)} {/* Recursively render child nodes */}
-              </div>
+              <div className="node-children">{renderNodes(node.childNodes)}</div>
             )}
         </div>
       );
     });
-  };  
-  
+  };
 
   const renderTree = (tree) => {
     return tree.map((category) => (
       <div key={category.id} className="category">
         <div className="category-content">
           <span className="category-title">{category.title}</span>
-          <img 
-            src={categoryIcon} 
-            alt="Category Icon" 
-            className="node-icon" 
-          />
+          <img src={categoryIcon} alt="Category Icon" className="node-icon" />
           <span className="caret" onClick={() => toggleCollapse(category.id)}>
             {collapsedItems[category.id] ? '+' : '-'}
-        </span>
+          </span>
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
@@ -197,7 +208,6 @@ const NodeTree = ({ projectId, space, onNodeClick }) => {
       </div>
     ));
   };
-  
 
   return (
     <div className="node-tree">

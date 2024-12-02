@@ -75,3 +75,16 @@
   vertical-align: middle; /* Align the icon with text */
   margin-left: 10px;
 }
+
+@keyframes flash {
+  0% {
+    background-color: green;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.node-flash {
+  animation: flash 1s ease-in-out;
+}
