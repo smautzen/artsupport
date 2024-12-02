@@ -202,10 +202,11 @@ app.post('/chat', async (req, res) => {
     // Ensure that every node in suggestions has `nodeName`, `description`, `reasoning`, and `id`.
     const suggestions = assistantResponse.suggestions.map((suggestion) => {
       return {
-        categoryName: suggestion.categoryName,
+        title: suggestion.title,
         description: suggestion.description,
+        reasoning: suggestion.reasoning || 'No reasoning provided',
         nodes: suggestion.nodes.map((node) => ({
-          nodeName: node.nodeName || node.title, // Using nodeName or title as a fallback
+          title: node.title,
           description: node.description || 'No description available',
           reasoning: node.reasoning || 'No reasoning provided',
           id: node.id || uuidv4(), // Generate a unique ID if it's missing
@@ -432,7 +433,7 @@ const fetchOntology = async (projectId) => {
 
           return {
             id: doc.id, // Ensure each node has an ID
-            nodeName: data.title,
+            title: data.title,
             description: data.description || '',
             reasoning: data.reasoning || 'No reasoning provided', // Assuming reasoning is available, otherwise fallback
             childNodes, // Include child nodes recursively
@@ -449,7 +450,7 @@ const fetchOntology = async (projectId) => {
           const data = doc.data();
           const nodes = await fetchNodes(collectionRef.doc(doc.id).collection('nodes')); // Fetch nodes for this category
           return {
-            categoryName: data.title,
+            title: data.title,
             description: data.description || '',
             nodes, // Include nodes with their child nodes
           };
@@ -492,21 +493,33 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
 
         Your task is to:
         1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
-        2. For each attached node, suggest ways to expand or elaborate on it.
-        3. If it makes sense, suggest how the attached nodes could be explored in combination, ensuring the suggestions are contextually relevant to the project’s current focus.
+        2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well.
+        3. If it makes sense, suggest how the attached nodes and their child nodes could be explored in combination, ensuring the suggestions are contextually relevant to the project’s current focus.
         4. Avoid suggesting unrelated nodes or categories. Make sure your suggestions align with the user’s project and the current ontology.
-        5. Return your response in the following JSON format:
+        5. Any category suggestion should be supplied with a space attribute, depending on whether you judge it to fit best into the material or conceptual space. All children of the particular category should also share this space.
+        6. Return your response in the following JSON format:
         {
           "responseMessage": "Your primary response to the user.",
           "suggestions": [
             {
-              "categoryName": "Name of the category",
+              "title": "Name of the category",
               "description": "Brief description of the category",
+              "reasoning": "Why you suggested this category.",
+              "space": "material or conceptual",
               "nodes": [
                 {
-                  "nodeName": "Name of the node",
+                  "title": "Name of the node",
                   "description": "Brief description of the node",
-                  "reasoning": "Why you suggested this node."
+                  "reasoning": "Why you suggested this node.",
+                  "space": "same as parent",
+                  "childNodes": [
+                    {
+                      "title": "Name of the child node",
+                      "description": "Brief description of the child node",
+                      "reasoning": "Why you suggested this child node.",
+                      "space": "same as parent"
+                    }
+                  ]
                 }
               ]
             }
@@ -527,19 +540,31 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
         Your task is to:
         1. Focus on the user's message and provide suggestions based on the context of the current project.
         2. Suggest categories or nodes that align with the user's message and the existing ontology.
-        3. Provide reasoning for each suggestion to explain its relevance to the user's project.
-        4. Return your response in the following JSON format:
+        3. If the suggested node has child nodes, suggest how those could be explored as well.
+        4. Provide reasoning for each suggestion to explain its relevance to the user's project.
+        5. Any category suggestion should be supplied with a space attribute, depending on whether you judge it to fit best into the material or conceptual space. All children of the particular category should also share this space.
+        6. Return your response in the following JSON format:
         {
           "responseMessage": "Your primary response to the user.",
           "suggestions": [
             {
-              "categoryName": "Name of the category",
+              "title": "Name of the category",
               "description": "Brief description of the category",
+              "space": "material or conceptual",
               "nodes": [
                 {
-                  "nodeName": "Name of the node",
+                  "title": "Name of the node",
                   "description": "Brief description of the node",
-                  "reasoning": "Why you suggested this node."
+                  "reasoning": "Why you suggested this node",
+                  "space": "same as parent",
+                  "childNodes": [
+                    {
+                      "title": "Name of the child node",
+                      "description": "Brief description of the child node",
+                      "reasoning": "Why you suggested this child node",
+                      "space": "same as parent"
+                    }
+                  ]
                 }
               ]
             }
@@ -562,6 +587,7 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
     throw new Error('Failed to generate assistant response.');
   }
 };
+
 
 
 // Start server
