@@ -129,8 +129,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       setLoading(false);
     }
   };
-  
-  
 
   const sendTestMessage = async () => {
     if (!input.trim()) return;
@@ -208,15 +206,18 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
                 {new Date(msg.timestamp).toLocaleString()}
               </div>
               {msg.messageType === 'system' && msg.suggestions && msg.suggestions.length > 0 ? (
-  <SystemMessage
-    payload={msg.suggestions}
-    projectId={projectId}
-    messageId={msg.id}
-  />
-) : (
-  <div>{msg.content}</div>
-)}
-
+                <>
+                  {/* Display system response content above the SystemMessage */}
+                  <div className="system-response-text">{msg.content}</div>
+                  <SystemMessage
+                    payload={msg.suggestions}
+                    projectId={projectId}
+                    messageId={msg.id}
+                  />
+                </>
+              ) : (
+                <div>{msg.content}</div>
+              )}
             </div>
           ))}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
