@@ -76,13 +76,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
+  
     try {
       setInput('');
       setSelectedNodes([]);
-
+  
       setLoading(true);
-
+  
       const payload = {
         projectId,
         message: input,
@@ -91,12 +91,46 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           title: node.title,
         })),
       };
-
-      await axios.post('http://localhost:4000/chat', payload);
+  
+      console.log("Payload being sent:", payload);  // Log the payload
+  
+      const response = await axios.post('http://localhost:4000/chat', payload);
+      console.log("Response from server:", response);
+  
+      // Assuming response.data contains the system's message and suggestions
+      const { messageId, suggestions } = response.data;
+  
+      // If suggestions exist and have nodes, render them
+      if (suggestions && suggestions.length > 0) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: messageId,
+            messageType: 'system',
+            suggestions: suggestions,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } else {
+        // Add the system message without suggestions
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: messageId,
+            messageType: 'system',
+            content: response.data.response,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
+  
     } catch (error) {
+      console.error("Error while sending message:", error);
       setLoading(false);
     }
   };
+  
+  
 
   const sendTestMessage = async () => {
     if (!input.trim()) return;
@@ -173,15 +207,16 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
               <div className="timestamp">
                 {new Date(msg.timestamp).toLocaleString()}
               </div>
-              {msg.messageType === 'system' && msg.suggestions ? (
-                <SystemMessage
-                  payload={msg.suggestions}
-                  projectId={projectId}
-                  messageId={msg.id}
-                />
-              ) : (
-                <div>{msg.content}</div>
-              )}
+              {msg.messageType === 'system' && msg.suggestions && msg.suggestions.length > 0 ? (
+  <SystemMessage
+    payload={msg.suggestions}
+    projectId={projectId}
+    messageId={msg.id}
+  />
+) : (
+  <div>{msg.content}</div>
+)}
+
             </div>
           ))}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>

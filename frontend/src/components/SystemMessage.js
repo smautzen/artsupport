@@ -107,13 +107,13 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
               onClick={(event) => handleLike(index, null, event)}
               disabled={likedSuggestions[index]?.liked}
             >
-              {item.title || 'Unnamed Suggestion'}
+              {item.categoryName || 'Unnamed Category'} {/* Display categoryName */}
             </button>
             <div className="item-description">{item.description || 'No description available'}</div>
             <ul>
               {item.nodes &&
                 item.nodes.map((node) => (
-                  <li key={`node-${node.id}`}>
+                  <li key={`node-${node.id || node.nodeName}`}>
                     <button
                       className={`highlight-button ${
                         likedSuggestions[index]?.nodes?.[node.id] ? 'liked' : ''
@@ -121,7 +121,7 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
                       onClick={(event) => handleLike(index, node.id, event)}
                       disabled={likedSuggestions[index]?.nodes?.[node.id]}
                     >
-                      {node.title || 'Unnamed Node'}
+                      {node.nodeName || 'Unnamed Node'} {/* Display nodeName */}
                     </button>{' '}
                     - {node.description || 'No description'} ({node.type})
                   </li>

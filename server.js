@@ -160,54 +160,80 @@ app.post('/chat', async (req, res) => {
   try {
     const { projectId, message, nodeReferences } = req.body;
 
-    console.log('Received payload:', { projectId, message, nodeReferences }); // Debug: Log the payload
+    console.log('Received payload:', { projectId, message, nodeReferences });
 
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
 
+    // Ensure nodeReferences is an array
     const references = Array.isArray(nodeReferences) ? nodeReferences : [];
 
-    // Step 1: Save user message to Firestore
+    // Step 1: Fetch the ontology for the project
+    let ontology;
+    try {
+      ontology = await fetchOntology(projectId);
+    } catch (error) {
+      return res.status(500).send({ error: 'Failed to fetch project ontology.' });
+    }
+
+    // Step 2: Save user message to Firestore
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
     const userMessageRef = await chatCollectionRef.add({
       messageType: 'user',
       content: message,
       timestamp: new Date().toISOString(),
-      linkedNodes: references, // Save the references here
+      linkedNodes: references,
     });
 
-    // Step 2: Send the user message to OpenAI
-    let systemResponse;
+    // Step 3: Generate assistant response with emphasis on attached nodes (if any)
+    let assistantResponse;
     try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4', // Specify the model
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant for an art project tool.' },
-          { role: 'user', content: message },
-        ],
-      });
-      systemResponse = response.choices[0].message.content; // Extract OpenAI's response
-    } catch (apiError) {
-      console.error('Error connecting to OpenAI:', apiError);
-      systemResponse = 'Error generating a response. Please try again.';
+      assistantResponse = await generateAssistantResponse(message, ontology, references);
+    } catch (error) {
+      console.error('Error generating assistant response:', error);
+      assistantResponse = {
+        responseMessage: 'There was an error processing your request.',
+        suggestions: [],
+      };
     }
 
-    // Step 3: Save OpenAI's response to Firestore
-    await chatCollectionRef.add({
-      messageType: 'system',
-      content: systemResponse,
-      timestamp: new Date().toISOString(),
-      linkedNodes: [], // No references for system messages in this example
+    // Step 4: Ensure the response structure for suggestions
+    // Ensure that every node in suggestions has `nodeName`, `description`, `reasoning`, and `id`.
+    const suggestions = assistantResponse.suggestions.map((suggestion) => {
+      return {
+        categoryName: suggestion.categoryName,
+        description: suggestion.description,
+        nodes: suggestion.nodes.map((node) => ({
+          nodeName: node.nodeName || node.title, // Using nodeName or title as a fallback
+          description: node.description || 'No description available',
+          reasoning: node.reasoning || 'No reasoning provided',
+          id: node.id || uuidv4(), // Generate a unique ID if it's missing
+        })),
+      };
     });
 
-    // Step 4: Respond to the frontend
-    res.status(201).send({ messageId: userMessageRef.id });
+    // Step 5: Save assistant response to Firestore
+    await chatCollectionRef.add({
+      messageType: 'system',
+      content: assistantResponse.responseMessage,
+      timestamp: new Date().toISOString(),
+      suggestions: suggestions,
+    });
+
+    // Step 6: Respond to the frontend
+    res.status(201).send({
+      messageId: userMessageRef.id,
+      response: assistantResponse.responseMessage,
+      suggestions: suggestions,
+    });
   } catch (error) {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
 });
+
+
 
 const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
 
@@ -289,6 +315,7 @@ app.post('/testchat', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 app.get('/test-openai', async (req, res) => {
   try {
     const response = await openai.chat.completions.create({
@@ -388,6 +415,154 @@ app.post('/likeSuggestion', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
+const fetchOntology = async (projectId) => {
+  try {
+    const materialRef = db.collection('projects').doc(projectId).collection('material');
+    const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
+
+    // Recursive function to fetch child nodes
+    const fetchNodes = async (collectionRef) => {
+      const snapshot = await collectionRef.get();
+      return Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          const childNodesSnapshot = await collectionRef.doc(doc.id).collection('childNodes').get();
+          const childNodes = await fetchNodes(collectionRef.doc(doc.id).collection('childNodes')); // Fetch child nodes recursively
+
+          return {
+            id: doc.id, // Ensure each node has an ID
+            nodeName: data.title,
+            description: data.description || '',
+            reasoning: data.reasoning || 'No reasoning provided', // Assuming reasoning is available, otherwise fallback
+            childNodes, // Include child nodes recursively
+          };
+        })
+      );
+    };
+
+    // Fetch categories, nodes, and child nodes for a given reference
+    const fetchCategories = async (collectionRef) => {
+      const snapshot = await collectionRef.get();
+      return Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          const nodes = await fetchNodes(collectionRef.doc(doc.id).collection('nodes')); // Fetch nodes for this category
+          return {
+            categoryName: data.title,
+            description: data.description || '',
+            nodes, // Include nodes with their child nodes
+          };
+        })
+      );
+    };
+
+    // Fetch material and conceptual spaces
+    const materialCategories = await fetchCategories(materialRef);
+    const conceptualCategories = await fetchCategories(conceptualRef);
+
+    return {
+      material: materialCategories,
+      conceptual: conceptualCategories,
+    };
+  } catch (error) {
+    console.error('Error fetching ontology:', error);
+    throw new Error('Failed to fetch ontology.');
+  }
+};
+
+
+const generateAssistantResponse = async (message, ontology, nodeReferences) => {
+  try {
+    let prompt;
+
+    if (nodeReferences && nodeReferences.length > 0) {
+      // If nodes are attached, focus on the attached nodes
+      prompt = `
+        You are an assistant for an art project tool. 
+
+        Below is the current ontology for the project:
+        ${JSON.stringify(ontology, null, 2)}
+
+        The user has provided the following message:
+        "${message}"
+
+        The user has attached the following nodes:
+        ${JSON.stringify(nodeReferences, null, 2)}
+
+        Your task is to:
+        1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
+        2. For each attached node, suggest ways to expand or elaborate on it.
+        3. If it makes sense, suggest how the attached nodes could be explored in combination, ensuring the suggestions are contextually relevant to the project’s current focus.
+        4. Avoid suggesting unrelated nodes or categories. Make sure your suggestions align with the user’s project and the current ontology.
+        5. Return your response in the following JSON format:
+        {
+          "responseMessage": "Your primary response to the user.",
+          "suggestions": [
+            {
+              "categoryName": "Name of the category",
+              "description": "Brief description of the category",
+              "nodes": [
+                {
+                  "nodeName": "Name of the node",
+                  "description": "Brief description of the node",
+                  "reasoning": "Why you suggested this node."
+                }
+              ]
+            }
+          ]
+        }
+      `;
+    } else {
+      // If no nodes are attached, focus on the user's message only
+      prompt = `
+        You are an assistant for an art project tool. 
+
+        Below is the current ontology for the project:
+        ${JSON.stringify(ontology, null, 2)}
+
+        The user has provided the following message:
+        "${message}"
+
+        Your task is to:
+        1. Focus on the user's message and provide suggestions based on the context of the current project.
+        2. Suggest categories or nodes that align with the user's message and the existing ontology.
+        3. Provide reasoning for each suggestion to explain its relevance to the user's project.
+        4. Return your response in the following JSON format:
+        {
+          "responseMessage": "Your primary response to the user.",
+          "suggestions": [
+            {
+              "categoryName": "Name of the category",
+              "description": "Brief description of the category",
+              "nodes": [
+                {
+                  "nodeName": "Name of the node",
+                  "description": "Brief description of the node",
+                  "reasoning": "Why you suggested this node."
+                }
+              ]
+            }
+          ]
+        }
+      `;
+    }
+
+    // Send the prompt to OpenAI
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'system', content: prompt }],
+    });
+
+    // Parse and return the assistant's response
+    const assistantOutput = response.choices[0].message.content;
+    return JSON.parse(assistantOutput);
+  } catch (error) {
+    console.error('Error generating assistant response:', error);
+    throw new Error('Failed to generate assistant response.');
+  }
+};
+
 
 // Start server
 app.listen(port, () => {
