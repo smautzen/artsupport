@@ -1,15 +1,27 @@
 import React, { useState } from "react";
 import "./ImageGeneration.css";
 
-const ImageGeneration = ({ attachedNodes }) => {
+const ImageGeneration = ({ attachedNodes, generateImages }) => {
   const [prompt, setPrompt] = useState("");
   const [imageCount, setImageCount] = useState(1);
 
   const handleGenerateImages = () => {
+    if (!prompt.trim()) {
+      console.error("Prompt is required to generate images.");
+      return;
+    }
+
     console.log("Generating images with the following data:");
     console.log("Prompt:", prompt);
     console.log("Image Count:", imageCount);
     console.log("Attached Nodes:", attachedNodes);
+
+    // Call the generateImages function passed down from the ChatBox
+    generateImages({
+      prompt,
+      n: imageCount,
+      attachedNodes,
+    });
   };
 
   return (

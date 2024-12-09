@@ -27,15 +27,15 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
     try {
       const suggestion = payload[index];
       if (!suggestion) return;
-  
-      console.log("Selected suggestion:", suggestion);  // Log the selected suggestion
-  
+
+      console.log('Selected suggestion:', suggestion); // Log the selected suggestion
+
       const rect = event.target.getBoundingClientRect(); // Get button position
       const targetSpace = suggestion.space === 'material' ? 'left' : 'right'; // Determine direction
       const animationId = Date.now(); // Unique ID for this animation
-  
+
       // Log animation details
-      console.log("Animation details:", {
+      console.log('Animation details:', {
         animationId,
         title: nodeId
           ? suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node'
@@ -44,7 +44,7 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
         startX: rect.left + rect.width / 2,
         startY: rect.top + rect.height / 2,
       });
-  
+
       // Add to animations array
       setAnimations((prevAnimations) => [
         ...prevAnimations,
@@ -58,7 +58,7 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
           startY: rect.top + rect.height / 2,
         },
       ]);
-  
+
       // Build requestBody for Firestore update
       const requestBody = nodeId
         ? {
@@ -82,16 +82,16 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
             title: suggestion.title,
             description: suggestion.description || '',
           };
-  
+
       // Log the request body being sent to the backend
-      console.log("Request body being sent:", requestBody);
-  
+      console.log('Request body being sent:', requestBody);
+
       // Update Firestore via API call
       const response = await axios.post('http://localhost:4000/likeSuggestion', requestBody);
-  
+
       // Log the response from the backend
-      console.log("Response from server:", response);
-  
+      console.log('Response from server:', response);
+
       // Remove animation after 1 second
       setTimeout(() => {
         setAnimations((prevAnimations) =>
@@ -102,7 +102,6 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
       console.error('Error liking suggestion:', error);
     }
   };
-  
 
   return (
     <div className="system-message">
@@ -130,6 +129,11 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
               {item.title || 'Unnamed Suggestion'}
             </button>
             <div className="item-description">{item.description || 'No description available'}</div>
+            {item.url && (
+              <div className="image-url">
+                Image URL: <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
+              </div>
+            )}
             <ul>
               {item.nodes &&
                 item.nodes.map((node) => (

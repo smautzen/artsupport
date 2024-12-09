@@ -153,6 +153,29 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
+  const generateImages = async ({ prompt, n, attachedNodes }) => {
+    try {
+      setLoading(true);
+
+      const payload = {
+        projectId,
+        prompt,
+        n,
+        attachedNodes,
+      };
+
+      console.log('Generating images with payload:', payload);
+
+      const response = await axios.post('http://localhost:4000/generate-image', payload);
+      console.log('Response from server:', response);
+
+      // System message will be reflected via Firestore subscription
+    } catch (error) {
+      console.error('Error generating images:', error);
+      setLoading(false);
+    }
+  };
+
   const addNode = (node) => {
     setSelectedNodes((prevNodes) => {
       const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
@@ -230,7 +253,10 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
               <button className="close-btn" onClick={toggleImageGeneration}>
                 x
               </button>
-              <ImageGeneration attachedNodes={selectedNodes} />
+              <ImageGeneration
+                attachedNodes={selectedNodes}
+                generateImages={generateImages}
+              />
             </div>
           )}
         </div>
@@ -254,9 +280,14 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
             }
           }}
           placeholder="Type your message..."
+          disabled={showImageGeneration}
         />
-        <button onClick={sendMessage}>Send</button>
-        <button onClick={sendTestMessage}>Send test message</button>
+        <button onClick={sendMessage} disabled={showImageGeneration}>
+          Send
+        </button>
+        <button onClick={sendTestMessage} disabled={showImageGeneration}>
+          Send test message
+        </button>
       </div>
     </div>
   );
