@@ -496,7 +496,7 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
 
         Your task is to:
         1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
-        2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well.
+        2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well (NEVER make a suggestion with a title that already exists in the ontology).
         3. For each category, node, and child node, assign a "space" attribute:
            - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
            - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
@@ -546,7 +546,7 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
 
         Your task is to:
         1. Focus on the user's message and provide suggestions based on the context of the current project.
-        2. Suggest categories or nodes that align with the user's message and the existing ontology.
+        2. Suggest categories or nodes that align with the user's message and the existing ontology (NEVER make a suggestion with a title that already exists in the ontology).
         3. For each category, node, and child node, assign a "space" attribute:
            - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
            - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
