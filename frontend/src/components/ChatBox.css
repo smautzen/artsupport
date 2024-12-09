@@ -239,3 +239,10 @@
 .close-btn:hover {
   background-color: #d9363e;
 }
+
+.chatbox-input button:disabled {
+  background-color: #cccccc; /* Light gray background */
+  color: #666666; /* Gray text */
+  cursor: not-allowed; /* Change cursor to indicate disabled state */
+  opacity: 0.7; /* Reduce opacity for a more subdued appearance */
+}

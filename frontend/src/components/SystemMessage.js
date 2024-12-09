@@ -25,8 +25,84 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
   }, [payload]);
 
   const handleLike = async (index, nodeId = null, event) => {
-    // The like logic remains unchanged
-  };
+    try {
+      const suggestion = payload[index];
+      if (!suggestion) return;
+  
+      console.log("Selected suggestion:", suggestion); // Log the selected suggestion
+  
+      const rect = event.target.getBoundingClientRect(); // Get button position
+      const targetSpace = suggestion.space === 'material' ? 'left' : 'right'; // Determine direction
+      const animationId = Date.now(); // Unique ID for this animation
+  
+      // Log animation details
+      console.log("Animation details:", {
+        animationId,
+        title: nodeId
+          ? suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node'
+          : suggestion.title || 'Unnamed Suggestion',
+        targetSpace,
+        startX: rect.left + rect.width / 2,
+        startY: rect.top + rect.height / 2,
+      });
+  
+      // Add to animations array
+      setAnimations((prevAnimations) => [
+        ...prevAnimations,
+        {
+          id: animationId,
+          title: nodeId
+            ? suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node'
+            : suggestion.title || 'Unnamed Suggestion',
+          target: targetSpace,
+          startX: rect.left + rect.width / 2,
+          startY: rect.top + rect.height / 2,
+        },
+      ]);
+  
+      // Build requestBody for Firestore update
+      const requestBody = nodeId
+        ? {
+            projectId,
+            messageId,
+            suggestionIndex: index,
+            type: 'node',
+            nodeId,
+            categoryId: suggestion.id,
+            title: suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node',
+            description: suggestion.nodes.find((n) => n.id === nodeId)?.description || '',
+            categoryTitle: suggestion.title,
+            categoryDescription: suggestion.description || '',
+          }
+        : {
+            projectId,
+            messageId,
+            suggestionIndex: index,
+            type: 'category',
+            categoryId: suggestion.id,
+            title: suggestion.title,
+            description: suggestion.description || '',
+          };
+  
+      // Log the request body being sent to the backend
+      console.log("Request body being sent:", requestBody);
+  
+      // Update Firestore via API call
+      const response = await axios.post('http://localhost:4000/likeSuggestion', requestBody);
+  
+      // Log the response from the backend
+      console.log("Response from server:", response);
+  
+      // Remove animation after 1 second
+      setTimeout(() => {
+        setAnimations((prevAnimations) =>
+          prevAnimations.filter((anim) => anim.id !== animationId)
+        );
+      }, 1000); // Match animation duration
+    } catch (error) {
+      console.error("Error liking suggestion:", error);
+    }
+  };  
 
   const openOverlay = (imageUrl) => {
     setOverlayImage(imageUrl);

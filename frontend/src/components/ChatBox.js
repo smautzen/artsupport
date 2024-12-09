@@ -156,6 +156,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const generateImages = async ({ prompt, n, attachedNodes }) => {
     try {
       setLoading(true);
+      setShowImageGeneration(false); // Hide the ImageGeneration component when a request is sent
 
       const payload = {
         projectId,
@@ -269,7 +270,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           </button>
         )}
       </div>
-      <div className="chatbox-input">
+      <div className={`chatbox-input ${showImageGeneration ? 'disabled' : ''}`}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
