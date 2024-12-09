@@ -3,6 +3,7 @@ import axios from 'axios';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import './ChatBox.css';
 import SystemMessage from './SystemMessage';
+import UserMessage from './UserMessage';
 import ImageGeneration from './ImageGeneration';
 import NodesContainer from './NodesContainer';
 
@@ -220,30 +221,31 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         <img src={helpIcon} alt="Help Icon" className="help-icon" />
       </div>
       <div className="chatbox-messages">
-        {messages.map((msg, index) => (
-          <div key={msg.id} className={`chat-message ${msg.messageType}`}>
-            <div className="timestamp">{new Date(msg.timestamp).toLocaleString()}</div>
-            {msg.messageType === 'system' && msg.suggestions?.length ? (
-              <>
-                <div className="system-response-text">{msg.content}</div>
-                <SystemMessage
-                  payload={msg.suggestions}
-                  projectId={projectId}
-                  messageId={msg.id}
-                />
-              </>
-            ) : (
-              <div>{msg.content}</div>
-            )}
-          </div>
-        ))}
-        <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
-          <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
-            {dots || '\u00A0'}
-          </div>
-        </div>
-        <div ref={messagesEndRef} />
-      </div>
+  {messages.map((msg, index) => (
+    <div key={msg.id} className={`chat-message ${msg.messageType}`}>
+      {msg.messageType === 'user' ? (
+        <UserMessage content={msg.content} timestamp={msg.timestamp} />
+      ) : msg.messageType === 'system' && msg.suggestions?.length ? (
+        <>
+          <div className="system-response-text">{msg.content}</div>
+          <SystemMessage
+            payload={msg.suggestions}
+            projectId={projectId}
+            messageId={msg.id}
+          />
+        </>
+      ) : (
+        <div>{msg.content}</div>
+      )}
+    </div>
+  ))}
+  <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
+    <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
+      {dots || '\u00A0'}
+    </div>
+  </div>
+  <div ref={messagesEndRef} />
+</div>
       <div className="action-div">
         <div className="side-by-side">
           {(selectedNodes.length > 0 || showImageGeneration) && (
