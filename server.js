@@ -629,7 +629,7 @@ app.post('/generate-image', async (req, res) => {
     const openaiResponse = await openai.images.generate({
       prompt,
       n: n || 1, // Default to 1 image
-      size: '1024x1024',
+      size: '256x256',
       response_format: 'b64_json', // Ensure base64 format
     });
 
