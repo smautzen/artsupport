@@ -3,6 +3,8 @@ import axios from 'axios';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import './ChatBox.css';
 import SystemMessage from './SystemMessage';
+import ImageGeneration from './ImageGeneration';
+import NodesContainer from './NodesContainer';
 
 import chatIcon from '../assets/chat.png';
 import helpIcon from '../assets/help.png';
@@ -13,6 +15,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
   const [selectedNodes, setSelectedNodes] = useState([]);
+  const [showImageGeneration, setShowImageGeneration] = useState(false); // New state for toggling ImageGeneration
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
@@ -76,13 +79,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-  
+
     try {
       setInput('');
       setSelectedNodes([]);
-  
+
       setLoading(true);
-  
+
       const payload = {
         projectId,
         message: input,
@@ -91,16 +94,14 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           title: node.title,
         })),
       };
-  
-      console.log("Payload being sent:", payload);  // Log the payload
-  
+
+      console.log('Payload being sent:', payload);
+
       const response = await axios.post('http://localhost:4000/chat', payload);
-      console.log("Response from server:", response);
-  
-      // Assuming response.data contains the system's message and suggestions
+      console.log('Response from server:', response);
+
       const { messageId, suggestions } = response.data;
-  
-      // If suggestions exist and have nodes, render them
+
       if (suggestions && suggestions.length > 0) {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -112,7 +113,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           },
         ]);
       } else {
-        // Add the system message without suggestions
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -123,9 +123,8 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           },
         ]);
       }
-  
     } catch (error) {
-      console.error("Error while sending message:", error);
+      console.error('Error while sending message:', error);
       setLoading(false);
     }
   };
@@ -168,7 +167,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     setSelectedNodes((prevNodes) => {
       const updatedNodes = prevNodes.filter((node) => node.id !== nodeId);
       if (onNodeDeselect) {
-        onNodeDeselect(nodeId); // Notify parent about deselection
+        onNodeDeselect(nodeId);
       }
       return updatedNodes;
     });
@@ -177,6 +176,10 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   useImperativeHandle(ref, () => ({
     addNode,
   }));
+
+  const toggleImageGeneration = () => {
+    setShowImageGeneration((prev) => !prev);
+  };
 
   return (
     <div className="chatbox">
@@ -207,7 +210,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
               </div>
               {msg.messageType === 'system' && msg.suggestions && msg.suggestions.length > 0 ? (
                 <>
-                  {/* Display system response content above the SystemMessage */}
                   <div className="system-response-text">{msg.content}</div>
                   <SystemMessage
                     payload={msg.suggestions}
@@ -229,35 +231,19 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       </div>
       <div className="action-div">
         {selectedNodes.length > 0 && (
-          <div className="nodes-container">
-            <div className="nodes-scrollable">
-              {selectedNodes.map((node) => (
-                <div key={node.id} className="node-item">
-                  <div
-                    className="node-name"
-                    style={{
-                      backgroundColor: node.space === 'material' ? '#007bff' : '#28a745',
-                    }}
-                  >
-                    {node.title}
-                  </div>
-                  <div className="node-delete">
-                    <button
-                      className="node-delete-btn"
-                      onClick={() => removeNode(node.id)}
-                    >
-                      x
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <NodesContainer selectedNodes={selectedNodes} onRemoveNode={removeNode} />
         )}
-        <button className="generate-images-btn">Generate images</button>
+        <button className="generate-images-btn" onClick={toggleImageGeneration}>
+          {showImageGeneration ? 'Hide Image Generation' : 'Generate Images'}
+        </button>
         <button className="explore-concepts-btn">Explore concepts</button>
         {selectedNodes.length === 0 && <div>Click a node to attach it to your message!</div>}
       </div>
+      {showImageGeneration && (
+        <div className="image-generation-section">
+          <ImageGeneration attachedNodes={selectedNodes} />
+        </div>
+      )}
       <div className="chatbox-input">
         <textarea
           value={input}

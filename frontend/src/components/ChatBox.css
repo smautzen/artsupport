@@ -244,6 +244,32 @@
   animation: fadeIn 0.3s ease-in-out;
 }
 
+.image-generation-section {
+  margin-top: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.generate-images-btn {
+  margin-top: 10px;
+  padding: 10px 15px;
+  font-size: 1rem;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.generate-images-btn:hover {
+  background-color: #0056b3;
+}
+
+.generate-images-btn:active {
+  background-color: #003f7f;
+}
 
 
 
