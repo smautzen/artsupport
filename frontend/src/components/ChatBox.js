@@ -15,7 +15,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
   const [selectedNodes, setSelectedNodes] = useState([]);
-  const [showImageGeneration, setShowImageGeneration] = useState(false); // New state for toggling ImageGeneration
+  const [showImageGeneration, setShowImageGeneration] = useState(false);
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
@@ -196,32 +196,23 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         <img src={helpIcon} alt="Help Icon" className="help-icon" />
       </div>
       <div className="chatbox-messages">
-        {messages
-          .sort((a, b) => a.timestamp - b.timestamp)
-          .map((msg, index) => (
-            <div
-              key={msg.id}
-              className={`chat-message ${msg.messageType} ${
-                index === messages.length - 1 ? 'new-message' : ''
-              }`}
-            >
-              <div className="timestamp">
-                {new Date(msg.timestamp).toLocaleString()}
-              </div>
-              {msg.messageType === 'system' && msg.suggestions && msg.suggestions.length > 0 ? (
-                <>
-                  <div className="system-response-text">{msg.content}</div>
-                  <SystemMessage
-                    payload={msg.suggestions}
-                    projectId={projectId}
-                    messageId={msg.id}
-                  />
-                </>
-              ) : (
-                <div>{msg.content}</div>
-              )}
-            </div>
-          ))}
+        {messages.map((msg, index) => (
+          <div key={msg.id} className={`chat-message ${msg.messageType}`}>
+            <div className="timestamp">{new Date(msg.timestamp).toLocaleString()}</div>
+            {msg.messageType === 'system' && msg.suggestions?.length ? (
+              <>
+                <div className="system-response-text">{msg.content}</div>
+                <SystemMessage
+                  payload={msg.suggestions}
+                  projectId={projectId}
+                  messageId={msg.id}
+                />
+              </>
+            ) : (
+              <div>{msg.content}</div>
+            )}
+          </div>
+        ))}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
           <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
             {dots || '\u00A0'}
@@ -230,20 +221,28 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         <div ref={messagesEndRef} />
       </div>
       <div className="action-div">
-        {selectedNodes.length > 0 && (
-          <NodesContainer selectedNodes={selectedNodes} onRemoveNode={removeNode} />
-        )}
-        <button className="generate-images-btn" onClick={toggleImageGeneration}>
-          {showImageGeneration ? 'Hide Image Generation' : 'Generate Images'}
-        </button>
-        <button className="explore-concepts-btn">Explore concepts</button>
-        {selectedNodes.length === 0 && <div>Click a node to attach it to your message!</div>}
-      </div>
-      {showImageGeneration && (
-        <div className="image-generation-section">
-          <ImageGeneration attachedNodes={selectedNodes} />
+        <div className="side-by-side">
+          {(selectedNodes.length > 0 || showImageGeneration) && (
+            <NodesContainer selectedNodes={selectedNodes} onRemoveNode={removeNode} />
+          )}
+          {showImageGeneration && (
+            <div className="image-generation-wrapper">
+              <button className="close-btn" onClick={toggleImageGeneration}>
+                x
+              </button>
+              <ImageGeneration attachedNodes={selectedNodes} />
+            </div>
+          )}
         </div>
-      )}
+        {selectedNodes.length === 0 && !showImageGeneration && (
+          <div>Click a node to attach it to your message!</div>
+        )}
+        {!showImageGeneration && (
+          <button className="generate-images-btn" onClick={toggleImageGeneration}>
+            Generate Images
+          </button>
+        )}
+      </div>
       <div className="chatbox-input">
         <textarea
           value={input}

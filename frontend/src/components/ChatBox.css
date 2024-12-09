@@ -24,15 +24,15 @@
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Adds spacing between messages */
+  gap: 10px;
 }
 
 .chat-message {
-  position: relative; /* Allows positioning of the timestamp */
+  position: relative;
   padding: 8px 12px;
   border-radius: 15px;
-  max-width: 65%; /* Ensures messages never exceed 65% of the parent's width */
-  word-wrap: break-word; /* Breaks long words to prevent overflow */
+  max-width: 65%;
+  word-wrap: break-word;
 }
 
 .chat-message .timestamp {
@@ -43,28 +43,20 @@
 
 .chat-message.user {
   background-color: #e0f7fa;
-  align-self: flex-end; /* Aligns user messages to the right */
+  align-self: flex-end;
   text-align: left;
-}
-
-.chat-message.user .timestamp {
-  text-align: right; /* Timestamp for user chats aligns to the right */
 }
 
 .chat-message.system {
   background-color: #eeeeee;
-  align-self: flex-start; /* Aligns system messages to the left */
+  align-self: flex-start;
   text-align: left;
-}
-
-.chat-message.system .timestamp {
-  text-align: left; /* Timestamp for system chats aligns to the left */
 }
 
 .chatbox-input {
   display: flex;
   gap: 10px;
-  height: 100px; /* Keeps the height consistent */
+  height: 100px;
 }
 
 .chatbox-input textarea {
@@ -73,19 +65,8 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
-  resize: none; /* Prevents the user from resizing the textarea */
-  text-align: left; /* Ensures the text aligns to the left */
-  vertical-align: top; /* Ensures the text starts at the top */
-  overflow-y: auto; /* Adds scroll behavior if the content exceeds height */
-}
-
-
-.chatbox-input input {
-  flex-grow: 1;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+  resize: none;
+  overflow-y: auto;
 }
 
 .chatbox-input button {
@@ -102,29 +83,20 @@
   background-color: #0056b3;
 }
 
-.chatbox-extra {
-  width: 100%;
-  height: 50px; /* Adjust the height as needed */
-  border: 1px solid #ddd; /* Visible border */
-  border-radius: 4px; /* Optional for rounded corners */
-  margin-bottom: 10px; /* Space between extra box and input */
-  background-color: #f5f5f5; /* Light background for visibility */
-}
-
 .action-div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px; /* Space between action div and input */
-  width: 100%; /* Full width of the chatbox */
+  margin-bottom: 10px;
+  width: 100%;
 }
 
 .nodes-container {
   margin: 10px 0;
   border: 1px solid #ccc;
   padding: 10px;
-  height: 150px; /* Adjust as needed */
-  overflow-y: auto; /* Enable scrolling when content overflows */
+  height: 150px;
+  overflow-y: auto;
   background-color: #f9f9f9;
 }
 
@@ -132,46 +104,38 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 5px; /* Space between pills */
-}
-
-.node-item:last-child {
-  border-bottom: none;
+  margin-bottom: 5px;
 }
 
 .node-name {
   flex: 1;
-  text-align: center; /* Center the text inside the button */
+  text-align: center;
   padding: 7px 16px;
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 16px 0 0 16px; /* Rounded corners on the left */
+  border-radius: 16px 0 0 16px;
   font-size: 1rem;
-  cursor: default; /* Prevent pointer cursor on the name button */
+  cursor: default;
 }
 
 .node-delete-btn {
-  text-align: center; /* Center the 'x' inside the button */
+  text-align: center;
   padding: 8px 16px;
   background-color: #cf6d6d;
   color: white;
   border: none;
-  border-radius: 0 16px 16px 0; /* Rounded corners on the right */
+  border-radius: 0 16px 16px 0;
   font-size: 1rem;
-  cursor: pointer; /* Pointer cursor for delete */
+  cursor: pointer;
 }
 
 .node-delete-btn:hover {
-  background-color: #c82333; /* Darker red on hover */
-}
-
-.node-item .node-delete-btn:focus {
-  outline: none; /* Remove focus outline */
+  background-color: #c82333;
 }
 
 .generate-images-btn, .explore-concepts-btn {
-  margin-left: 10px; /* Space between the container and button */
+  margin-left: 10px;
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -187,51 +151,50 @@
 
 .chat-header {
   display: flex;
-  align-items: center; /* Centers items vertically */
-  justify-content: center; /* Centers items horizontally */
-  gap: 10px; /* Adds spacing between title and icon */
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .chat-icon {
-  width: 24px; /* Adjust as needed */
-  height: 24px; /* Adjust as needed */
+  width: 24px;
+  height: 24px;
 }
 
 .chat-description {
-  display: block; /* Ensures it takes its own line */
-  text-align: center; /* Centers the text horizontally */
-  font-size: 1rem; /* Adjust font size as needed */
-  color: #666; /* Set a subtle color for the description */
-  margin-bottom: 10px; /* Adds spacing above the NodeTree */
+  display: block;
+  text-align: center;
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 10px;
 }
 
 .chat-message.loading {
-  display: none; /* Hidden by default */
-  text-align: left; /* Align the message to the left */
-  color: #888; /* Subtle gray color for the dots */
-  font-style: italic; /* Optional: italicize for style */
-  font-size: 1rem; /* Match the font size of chat messages */
-  margin: 10px 0; /* Add vertical spacing */
-  padding: 8px 12px; /* Match the padding of system messages */
-  border-radius: 5px; /* Rounded edges */
-  background-color: #f1f1f1; /* Light background for visibility */
-  max-width: 65%; /* Match the max width of system messages */
-  align-self: flex-start; /* Align to the left like system messages */
+  display: none;
+  text-align: left;
+  color: #888;
+  font-style: italic;
+  font-size: 1rem;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background-color: #f1f1f1;
+  max-width: 65%;
+  align-self: flex-start;
 }
 
 .chat-message.loading.visible {
-  display: block; /* Show when loading is true */
+  display: block;
 }
 
 .chat-message.loading.hidden {
-  display: none; /* Fully hide when loading is false */
+  display: none;
 }
 
-/* Keyframes for fade-in effect */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px); /* Optional: adds a slight slide-up effect */
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -239,37 +202,40 @@
   }
 }
 
-/* Fade-in animation for new messages */
 .chat-message.new-message {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-.image-generation-section {
-  margin-top: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 15px;
-  background-color: #f9f9f9;
+.side-by-side {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.generate-images-btn {
-  margin-top: 10px;
-  padding: 10px 15px;
-  font-size: 1rem;
-  background-color: #007bff;
-  color: #fff;
+.image-generation-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.image-generation-section {
+  flex: 1;
+}
+
+.close-btn {
+  align-self: flex-end;
+  margin-bottom: 10px;
+  background-color: #ff4d4f;
+  color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1rem;
   cursor: pointer;
 }
 
-.generate-images-btn:hover {
-  background-color: #0056b3;
+.close-btn:hover {
+  background-color: #d9363e;
 }
-
-.generate-images-btn:active {
-  background-color: #003f7f;
-}
-
-
-
