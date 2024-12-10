@@ -246,3 +246,23 @@
   cursor: not-allowed; /* Change cursor to indicate disabled state */
   opacity: 0.7; /* Reduce opacity for a more subdued appearance */
 }
+
+.tooltip {
+  position: absolute;
+  top: 100%; /* Position it below the description */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 12px;
+  white-space: normal;
+  z-index: 1000;
+  display: none; /* Initially hidden */
+}
+
+.help-icon-wrapper:hover + .tooltip {
+  display: block; /* Show on hover */
+}

@@ -82,3 +82,31 @@
   margin-bottom: 10px; /* Adds spacing above the NodeTree */
 }
 
+.tooltip {
+  position: absolute;
+  top: 100%; /* Positioned below the description */
+  left: 50%; /* Centered horizontally in the space-box */
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 12px;
+  white-space: normal; /* Allow text wrapping */
+  word-wrap: break-word;
+  max-width: 70%; /* Optional: cap the width relative to the parent */
+  box-sizing: border-box;
+  z-index: 1;
+  display: none; /* Hidden by default */
+}
+
+.help-icon-wrapper:hover + .tooltip {
+  display: block; /* Show the tooltip when hovering over the help icon */
+}
+
+.space-info {
+  position: relative; /* Ensure tooltip is positioned relative to space-info */
+}
+
+
