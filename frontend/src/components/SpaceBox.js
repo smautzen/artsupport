@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './SpaceBox.css'; // Import the CSS file
 import NodeTree from './NodeTree'; // Import the NodeTree component
+import DefaultCategorySuggestions from './DefaultCategorySuggestions';
 
 import materialSpaceIcon from '../assets/materialspace.png';
 import conceptualSpaceIcon from '../assets/conceptualspace.png';
@@ -47,7 +48,8 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDese
         selectedNodes={selectedNodes}
         onNodeDeselect={onNodeDeselect}
       />
-    </div>
+      <DefaultCategorySuggestions spaceName={spaceName} />
+</div>
   );
 };
 

@@ -235,7 +235,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
   return (
     <div className="node-tree">
-      {treeData.length === 0 ? <p>No categories found</p> : renderTree(treeData)}
+      {treeData.length === 0 ? <p>Select categories to add to space!</p> : renderTree(treeData)}
       {animations.map((animation) => (
         <div
           key={animation.id}
