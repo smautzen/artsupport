@@ -1,24 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { db } from '../firebase/firebase-config';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import './DefaultCategorySuggestions.css';
 
-const DefaultCategorySuggestions = ({ spaceName }) => {
+const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
+  const [suggestions, setSuggestions] = useState([]);
   const [animations, setAnimations] = useState([]);
 
-  // Hardcoded lists of default suggestions with descriptions
-  const suggestions = {
-    material: [
-      { title: 'Material category suggestion 1', description: 'Description for Material suggestion 1.' },
-      { title: 'Material category suggestion 2', description: 'Description for Material suggestion 2.' },
-      { title: 'Material category suggestion 3', description: 'Description for Material suggestion 3.' },
-    ],
-    conceptual: [
-      { title: 'Conceptual category suggestion 1', description: 'Description for Conceptual suggestion 1.' },
-      { title: 'Conceptual category suggestion 2', description: 'Description for Conceptual suggestion 2.' },
-      { title: 'Conceptual category suggestion 3', description: 'Description for Conceptual suggestion 3.' },
-    ],
-  };
+  useEffect(() => {
+    if (!projectId || !spaceName) {
+      console.warn('Missing projectId or spaceName:', { projectId, spaceName });
+      return;
+    }
 
-  const selectedSuggestions = suggestions[spaceName.toLowerCase()] || [];
+    const suggestionsRef = collection(db, 'projects', projectId, 'defaultSuggestions', spaceName, 'items');
+    console.log('Suggestions Firestore Reference:', suggestionsRef);
+
+    const suggestionsQuery = query(suggestionsRef, where('show', '==', true));
+    console.log('Firestore Query Created:', suggestionsQuery);
+
+    const unsubscribe = onSnapshot(
+      suggestionsQuery,
+      (snapshot) => {
+        console.log('Snapshot received:', snapshot.size, 'documents.');
+        snapshot.docs.forEach((doc) =>
+          console.log('Document fetched:', { id: doc.id, data: doc.data() })
+        );
+
+        const fetchedSuggestions = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        console.log('Fetched Suggestions:', fetchedSuggestions);
+        setSuggestions(fetchedSuggestions);
+      },
+      (error) => {
+        console.error('Error fetching snapshot:', error);
+      }
+    );
+
+    return () => {
+      console.log('Cleaning up Firestore listener');
+      unsubscribe();
+    };
+  }, [projectId, spaceName]);
 
   const handleSuggestionClick = (suggestion, event) => {
     const rect = event.target.getBoundingClientRect();
@@ -45,16 +71,20 @@ const DefaultCategorySuggestions = ({ spaceName }) => {
     <div className="default-category-suggestions">
       <h3>Suggestions: (Click to add)</h3>
       <ul>
-        {selectedSuggestions.map((suggestion, index) => (
-          <li
-            key={index}
-            className="clickable-suggestion"
-            onClick={(event) => handleSuggestionClick(suggestion, event)}
-          >
-            <strong>{suggestion.title}</strong>
-            <p>{suggestion.description}</p>
-          </li>
-        ))}
+        {suggestions.length > 0 ? (
+          suggestions.map((suggestion) => (
+            <li
+              key={suggestion.id}
+              className="clickable-suggestion"
+              onClick={(event) => handleSuggestionClick(suggestion, event)}
+            >
+              <strong>{suggestion.title}</strong>
+              <p>{suggestion.description}</p>
+            </li>
+          ))
+        ) : (
+          <p>No suggestions available.</p>
+        )}
       </ul>
       {animations.map((animation) => (
         <div

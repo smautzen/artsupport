@@ -6,6 +6,8 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 4000;
 const FormData = require('form-data');
+const path = require('path');
+const fs = require('fs');
 
 // Use CORS middleware
 app.use(cors());
@@ -44,7 +46,7 @@ app.post('/projects', async (req, res) => {
       name,
       description,
       includeSampleData,
-    }); // Debug log
+    });
 
     // Add the project document
     const projectRef = await db.collection('projects').add({
@@ -55,12 +57,39 @@ app.post('/projects', async (req, res) => {
 
     const projectId = projectRef.id;
 
-    // Initialize subcollections
-    const chatRef = db.collection('projects').doc(projectId).collection('chat');
-    const materialRef = db.collection('projects').doc(projectId).collection('material');
-    const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
+    // Add defaultSuggestions document
+    const defaultSuggestionsPath = path.join(__dirname, 'defaultSuggestions.json');
+    let defaultSuggestionsData;
 
-    // Add a default welcoming message to the chat
+    try {
+      defaultSuggestionsData = JSON.parse(fs.readFileSync(defaultSuggestionsPath, 'utf-8'));
+      console.log('Default Suggestions Data:', defaultSuggestionsData); // Debug log
+    } catch (error) {
+      console.error('Error reading defaultSuggestions.json:', error);
+      throw new Error('Failed to load default suggestions');
+    }
+
+    const defaultSuggestionsRef = db.collection('projects').doc(projectId).collection('defaultSuggestions');
+
+    for (const [space, suggestions] of Object.entries(defaultSuggestionsData)) {
+      const spaceRef = defaultSuggestionsRef.doc(space).collection('items');
+
+      for (const suggestion of suggestions) {
+        await spaceRef.add({
+          title: suggestion.title,
+          description: suggestion.description,
+          liked: suggestion.liked,
+          show: suggestion.show,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    console.log('Default suggestions added to Firestore');
+
+    // Initialize other subcollections
+    const chatRef = db.collection('projects').doc(projectId).collection('chat');
+
     await chatRef.add({
       messageType: 'system',
       content: 'Welcome to your new project! Let’s start creating.',
@@ -68,12 +97,12 @@ app.post('/projects', async (req, res) => {
       linkedNodes: [],
     });
 
-    // Check if sample data should be added
-    console.log('includeSampleData flag:', includeSampleData); // Debug log
-    if (includeSampleData) {
-      console.log('Adding sample data...'); // Debug log
+    console.log('Chat initialized');
 
-      // Add a sample data message
+    // Check if sample data should be added
+    if (includeSampleData) {
+      console.log('Adding sample data...');
+
       await chatRef.add({
         messageType: 'system',
         content: 'Sample data added to help you get started.',
@@ -98,7 +127,7 @@ app.post('/projects', async (req, res) => {
             description: category.description,
             createdAt: new Date().toISOString(),
             type: 'category',
-            space, // Add space property to category
+            space,
           });
 
           const nodeRef = categoryRef.collection('nodes');
@@ -107,8 +136,8 @@ app.post('/projects', async (req, res) => {
             const nodeDoc = await nodeRef.add({
               title: node.title,
               description: node.description,
-              type: 'text', // Default type
-              space, // Add space property to node
+              type: 'text',
+              space,
             });
 
             const childNodeRef = nodeDoc.collection('childNodes');
@@ -117,19 +146,21 @@ app.post('/projects', async (req, res) => {
               await childNodeRef.add({
                 title: childNode.title,
                 description: childNode.description,
-                type: 'text', // Default type to child nodes
-                space, // Add space property to child node
+                type: 'text',
+                space,
               });
             }
           }
         }
       };
 
-      // Create categories and nodes with their respective spaces
-      await createCategoriesAndNodes(materialRef, 'Material', 'material'); // Set space to "material"
-      await createCategoriesAndNodes(conceptualRef, 'Conceptual', 'conceptual'); // Set space to "conceptual"
+      const materialRef = db.collection('projects').doc(projectId).collection('material');
+      const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
+
+      await createCategoriesAndNodes(materialRef, 'Material', 'material');
+      await createCategoriesAndNodes(conceptualRef, 'Conceptual', 'conceptual');
     } else {
-      console.log('Creating project without sample data'); // Debug log
+      console.log('Creating project without sample data');
     }
 
     res.status(201).send({ id: projectId });

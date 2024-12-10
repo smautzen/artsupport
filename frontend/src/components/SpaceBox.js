@@ -48,7 +48,7 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDese
         selectedNodes={selectedNodes}
         onNodeDeselect={onNodeDeselect}
       />
-      <DefaultCategorySuggestions spaceName={spaceName} />
+      <DefaultCategorySuggestions spaceName={spaceName.toLowerCase()} projectId={projectId} />
 </div>
   );
 };

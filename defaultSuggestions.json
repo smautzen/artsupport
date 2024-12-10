@@ -1,0 +1,31 @@
+{
+    "material": [
+      {
+        "title": "Material Suggestion 1",
+        "description": "This is a description for Material Suggestion 1.",
+        "liked": false,
+        "show": true
+      },
+      {
+        "title": "Material Suggestion 2",
+        "description": "This is a description for Material Suggestion 2.",
+        "liked": false,
+        "show": true
+      }
+    ],
+    "conceptual": [
+      {
+        "title": "Conceptual Suggestion 1",
+        "description": "This is a description for Conceptual Suggestion 1.",
+        "liked": false,
+        "show": true
+      },
+      {
+        "title": "Conceptual Suggestion 2",
+        "description": "This is a description for Conceptual Suggestion 2.",
+        "liked": false,
+        "show": true
+      }
+    ]
+  }
+  
