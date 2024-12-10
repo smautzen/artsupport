@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import axios from 'axios'; // Add Axios for API requests
 import './DefaultCategorySuggestions.css';
 
 const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
@@ -46,10 +47,11 @@ const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
     };
   }, [projectId, spaceName]);
 
-  const handleSuggestionClick = (suggestion, event) => {
+  const handleSuggestionClick = async (suggestion, event) => {
     const rect = event.target.getBoundingClientRect();
     const animationId = Date.now();
 
+    // Add the animation
     setAnimations((prevAnimations) => [
       ...prevAnimations,
       {
@@ -65,6 +67,21 @@ const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
     }, 1000);
 
     console.log('Clicked suggestion:', suggestion);
+
+    // Hit the likeDefaultSuggestion endpoint
+    try {
+      const response = await axios.post('http://localhost:4000/likeDefaultSuggestion', {
+        projectId,
+        spaceName,
+        suggestionId: suggestion.id,
+        title: suggestion.title,
+        description: suggestion.description,
+      });
+
+      console.log('Response from liking suggestion:', response.data);
+    } catch (error) {
+      console.error('Error liking suggestion:', error);
+    }
   };
 
   return (

@@ -750,6 +750,57 @@ app.post('/generate-image', async (req, res) => {
   }
 });
 
+app.post('/likeDefaultSuggestion', async (req, res) => {
+  try {
+    const { projectId, spaceName, suggestionId, title, description } = req.body;
+
+    if (!projectId || !spaceName || !suggestionId || !title || !description) {
+      return res.status(400).send({ error: 'Project ID, space name, suggestion ID, title, and description are required.' });
+    }
+
+    // Reference to the suggestion
+    const suggestionRef = db
+      .collection('projects')
+      .doc(projectId)
+      .collection('defaultSuggestions')
+      .doc(spaceName)
+      .collection('items')
+      .doc(suggestionId);
+
+    // Fetch the suggestion
+    const suggestionDoc = await suggestionRef.get();
+    if (!suggestionDoc.exists) {
+      return res.status(404).send({ error: 'Suggestion not found.' });
+    }
+
+    // Update the 'liked' attribute
+    await suggestionRef.update({ liked: true, show: false });
+
+    console.log(`Suggestion ${suggestionId} in ${spaceName} marked as liked.`);
+
+    // Add the category to the appropriate space
+    const spaceRef = db.collection('projects').doc(projectId).collection(spaceName);
+    const categorySnapshot = await spaceRef.where('title', '==', title).get();
+
+    if (categorySnapshot.empty) {
+      // Create a new category if it doesn't exist
+      console.log(`Creating category ${title} in ${spaceName}`);
+      await spaceRef.add({
+        title,
+        description,
+        type: 'category',
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      console.log(`Category ${title} already exists in ${spaceName}`);
+    }
+
+    res.status(200).send({ message: 'Suggestion liked and category added successfully.' });
+  } catch (error) {
+    console.error('Error in /likeDefaultSuggestion:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
 
 
 // Start server
