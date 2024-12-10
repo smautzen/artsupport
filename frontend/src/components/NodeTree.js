@@ -104,6 +104,10 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     fetchTreeData();
   }, [projectId, space]);
 
+  const handleExploreClick = (element) => {
+    console.log('Explore clicked for:', element);
+  };
+
   const handleNodeClick = (node, event) => {
     const isSelected = selectedNodes.some((selected) => selected.id === node.id);
     if (isSelected) {
@@ -164,7 +168,8 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
   const toggleCollapse = (id) => {
     setCollapsedItems((prev) => ({
-      ...prev,
+
+...prev,
       [id]: !prev[id],
     }));
   };
@@ -199,6 +204,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             {renderNodeComponent(node)}
+            <button onClick={() => handleExploreClick(node)}>Explore</button>
           </div>
           {!collapsedItems[node.id] &&
             node.childNodes &&
@@ -220,9 +226,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             {category.title}
           </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
-          <span className="caret" onClick={() => toggleCollapse(category.id)}>
-            {collapsedItems[category.id] ? '+' : '-'}
-          </span>
+          <button onClick={() => handleExploreClick(category)}>Explore</button>
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
