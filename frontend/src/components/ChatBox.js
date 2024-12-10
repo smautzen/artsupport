@@ -36,15 +36,20 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   useEffect(() => {
     if (!projectId) return;
-
+  
     const chatCollectionRef = collection(db, 'projects', projectId, 'chat');
-
+  
     const unsubscribe = onSnapshot(chatCollectionRef, (snapshot) => {
       const updatedMessages = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
           ...data,
+          linkedNodes: data.linkedNodes?.map((node) => ({
+            id: node.id,
+            title: node.title,
+            description: node.description || 'No description available', // Ensure description is included
+          })),
           timestamp: data.timestamp
             ? data.timestamp.toMillis
               ? data.timestamp.toMillis()
@@ -52,12 +57,12 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
             : 0,
         };
       });
-
+  
       const sortedMessages = updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
       setMessages(sortedMessages);
-
+  
       const latestMessage = sortedMessages[sortedMessages.length - 1];
-
+  
       if (latestMessage) {
         if (latestMessage.messageType === 'user') {
           setLoading(true);
@@ -68,9 +73,10 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         setLoading(false);
       }
     });
-
+  
     return () => unsubscribe();
   }, [db, projectId]);
+  
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -93,6 +99,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         nodeReferences: selectedNodes.map((node) => ({
           id: node.id,
           title: node.title,
+          description: node.description, 
         })),
       };
 
@@ -134,6 +141,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         nodeReferences: selectedNodes.map((node) => ({
           id: node.id,
           title: node.title,
+          description: node.description,
         })),
       };
 

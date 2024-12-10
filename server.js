@@ -179,14 +179,19 @@ app.post('/chat', async (req, res) => {
       return res.status(500).send({ error: 'Failed to fetch project ontology.' });
     }
 
-    // Step 2: Save user message to Firestore
-    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
-    const userMessageRef = await chatCollectionRef.add({
-      messageType: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-      linkedNodes: references,
-    });
+// Step 2: Save user message to Firestore
+const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+const userMessageRef = await chatCollectionRef.add({
+  messageType: 'user',
+  content: message,
+  timestamp: new Date().toISOString(),
+  linkedNodes: references.map((node) => ({
+    id: node.id,
+    title: node.title,
+    description: node.description || 'No description available', // Ensure description is included
+  })),
+});
+
 
     // Step 3: Generate assistant response with emphasis on attached nodes (if any)
     let assistantResponse;
@@ -251,14 +256,21 @@ app.post('/testchat', async (req, res) => {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
 
+        // Ensure nodeReferences is an array
+        const references = Array.isArray(nodeReferences) ? nodeReferences : [];
+
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
 
-    const userMessageRef = await chatCollectionRef.add({
-      messageType: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-      linkedNodes: nodeReferences || [],
-    });
+const userMessageRef = await chatCollectionRef.add({
+  messageType: 'user',
+  content: message,
+  timestamp: new Date().toISOString(),
+  linkedNodes: references.map((node) => ({
+    id: node.id,
+    title: node.title,
+    description: node.description || 'No description available', // Ensure description is included
+  })),
+});
 
     const systemResponse = `Responding to: "${message}"`;
 
