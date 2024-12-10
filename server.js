@@ -60,12 +60,23 @@ app.post('/projects', async (req, res) => {
     const materialRef = db.collection('projects').doc(projectId).collection('material');
     const conceptualRef = db.collection('projects').doc(projectId).collection('conceptual');
 
+    // Add a default welcoming message to the chat
+    await chatRef.add({
+      messageType: 'system',
+      content: 'Welcome to your new project! Let’s start creating.',
+      timestamp: new Date().toISOString(),
+      linkedNodes: [],
+    });
+
+    // Check if sample data should be added
     console.log('includeSampleData flag:', includeSampleData); // Debug log
     if (includeSampleData) {
       console.log('Adding sample data...'); // Debug log
+
+      // Add a sample data message
       await chatRef.add({
         messageType: 'system',
-        content: 'Welcome to the chat!',
+        content: 'Sample data added to help you get started.',
         timestamp: new Date().toISOString(),
         linkedNodes: [],
       });

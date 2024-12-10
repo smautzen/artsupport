@@ -133,6 +133,9 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
             key={`suggestion-${index}`}
             className={`suggestion ${item.url && likedSuggestions[index]?.liked ? 'liked-suggestion' : ''}`}
           >
+            <div className="timestamp">
+              {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Timestamp not available'}
+            </div>
             {item.url ? (
               // Image suggestion with overlayed Like button
               <div className="image-container">

@@ -48,11 +48,11 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           linkedNodes: data.linkedNodes?.map((node) => ({
             id: node.id,
             title: node.title,
-            description: node.description || 'No description available', // Ensure description is included
+            description: node.description || 'No description available',
           })),
           timestamp: data.timestamp
-            ? data.timestamp.toMillis
-              ? data.timestamp.toMillis()
+            ? data.timestamp.toDate
+              ? data.timestamp.toDate().getTime()
               : new Date(data.timestamp).getTime()
             : 0,
         };
@@ -76,6 +76,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   
     return () => unsubscribe();
   }, [db, projectId]);
+  
   
 
   useEffect(() => {
@@ -218,35 +219,43 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         <img src={helpIcon} alt="Help Icon" className="help-icon" />
       </div>
       <div className="chatbox-messages">
-        {messages.map((msg, index) => (
-          <div key={msg.id} className={`chat-message ${msg.messageType}`}>
-            {msg.messageType === 'user' ? (
-              <UserMessage
-                content={msg.content}
-                timestamp={msg.timestamp}
-                linkedNodes={msg.linkedNodes || []}
-              />
-            ) : msg.messageType === 'system' && msg.suggestions?.length ? (
-              <>
-                <div className="system-response-text">{msg.content}</div>
-                <SystemMessage
-                  payload={msg.suggestions}
-                  projectId={projectId}
-                  messageId={msg.id}
-                />
-              </>
-            ) : (
-              <div>{msg.content}</div>
-            )}
-          </div>
-        ))}
-        <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
-          <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
-            {dots || '\u00A0'}
-          </div>
-        </div>
-        <div ref={messagesEndRef} />
-      </div>
+  {messages.map((msg, index) => (
+    <div key={msg.id} className={`chat-message ${msg.messageType}`}>
+      {msg.messageType === 'user' ? (
+        <UserMessage
+          content={msg.content}
+          timestamp={msg.timestamp}
+          linkedNodes={msg.linkedNodes || []}
+        />
+      ) : msg.messageType === 'system' ? (
+        <>
+          {msg.timestamp && (
+            <div className="timestamp">
+              {new Date(msg.timestamp).toLocaleString()}
+            </div>
+          )}
+          <div className="system-response-text">{msg.content}</div>
+          {msg.suggestions?.length > 0 && (
+            <SystemMessage
+              payload={msg.suggestions}
+              projectId={projectId}
+              messageId={msg.id}
+            />
+          )}
+        </>
+      ) : (
+        <div>{msg.content}</div>
+      )}
+    </div>
+  ))}
+  <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
+    <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
+      {dots || '\u00A0'}
+    </div>
+  </div>
+  <div ref={messagesEndRef} />
+</div>
+
       <div className="action-div">
         <div className="side-by-side">
           {(selectedNodes.length > 0 || showImageGeneration) && (
