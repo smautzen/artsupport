@@ -84,24 +84,20 @@ const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
     }
   };
 
-  return (
+  return suggestions.length > 0 ? (
     <div className="default-category-suggestions">
       <h3>Suggestions: (Click to add)</h3>
       <ul>
-        {suggestions.length > 0 ? (
-          suggestions.map((suggestion) => (
-            <li
-              key={suggestion.id}
-              className="clickable-suggestion"
-              onClick={(event) => handleSuggestionClick(suggestion, event)}
-            >
-              <strong>{suggestion.title}</strong>
-              <p>{suggestion.description}</p>
-            </li>
-          ))
-        ) : (
-          <p>No suggestions available.</p>
-        )}
+        {suggestions.map((suggestion) => (
+          <li
+            key={suggestion.id}
+            className="clickable-suggestion"
+            onClick={(event) => handleSuggestionClick(suggestion, event)}
+          >
+            <strong>{suggestion.title}</strong>
+            <p>{suggestion.description}</p>
+          </li>
+        ))}
       </ul>
       {animations.map((animation) => (
         <div
@@ -113,7 +109,8 @@ const DefaultCategorySuggestions = ({ projectId, spaceName }) => {
         </div>
       ))}
     </div>
-  );
+  ) : null;
+  
 };
 
 export default DefaultCategorySuggestions;
