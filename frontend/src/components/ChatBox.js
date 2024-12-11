@@ -15,7 +15,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
-  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [selectedHierarchy, setSelectedHierarchy] = useState(null);
   const [showImageGeneration, setShowImageGeneration] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false); // Tooltip state
   const db = getFirestore();
@@ -46,11 +46,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         return {
           id: doc.id,
           ...data,
-          linkedNodes: data.linkedNodes?.map((node) => ({
-            id: node.id,
-            title: node.title,
-            description: node.description || 'No description available',
-          })),
+          linkedHierarchy: data.linkedHierarchy || null,
           timestamp: data.timestamp
             ? data.timestamp.toDate
               ? data.timestamp.toDate().getTime()
@@ -89,18 +85,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
     try {
       setInput('');
-      setSelectedNodes([]);
-
+      setSelectedHierarchy(null);
       setLoading(true);
 
       const payload = {
         projectId,
         message: input,
-        nodeReferences: selectedNodes.map((node) => ({
-          id: node.id,
-          title: node.title,
-          description: node.description,
-        })),
+        hierarchy: selectedHierarchy,
       };
 
       console.log('Payload being sent:', payload);
@@ -117,7 +108,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
           messageType: 'user',
           content: input,
           timestamp: new Date().toISOString(),
-          nodeReferences: selectedNodes, // Add attached nodes here
+          hierarchy: selectedHierarchy, // Add attached hierarchy here
         },
       ]);
     } catch (error) {
@@ -131,18 +122,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
     try {
       setInput('');
-      setSelectedNodes([]);
-
+      setSelectedHierarchy(null);
       setLoading(true);
 
       const payload = {
         projectId,
         message: input,
-        nodeReferences: selectedNodes.map((node) => ({
-          id: node.id,
-          title: node.title,
-          description: node.description,
-        })),
+        hierarchy: selectedHierarchy,
       };
 
       await axios.post('http://localhost:4000/testchat', payload);
@@ -151,7 +137,8 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
-  const generateImages = async ({ prompt, n, attachedNodes }) => {
+  const generateImages = async ({ prompt, n, attachedHierarchy }) => {
+    console.log('attachedHierarchy:', attachedHierarchy);
     try {
       setLoading(true);
       setShowImageGeneration(false); // Hide the ImageGeneration component when a request is sent
@@ -160,7 +147,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         projectId,
         prompt,
         n,
-        attachedNodes,
+        attachedHierarchy,
       };
 
       console.log('Generating images with payload:', payload);
@@ -175,29 +162,19 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
-
-  const addNode = (node) => {
-    setSelectedNodes((prevNodes) => {
-      const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
-      if (!isAlreadySelected) {
-        return [...prevNodes, node];
-      }
-      return prevNodes;
-    });
+  const addHierarchy = (hierarchy) => {
+    setSelectedHierarchy(hierarchy);
   };
 
-  const removeNode = (nodeId) => {
-    setSelectedNodes((prevNodes) => {
-      const updatedNodes = prevNodes.filter((node) => node.id !== nodeId);
-      if (onNodeDeselect) {
-        onNodeDeselect(nodeId);
-      }
-      return updatedNodes;
-    });
+  const removeHierarchy = () => {
+    setSelectedHierarchy(null);
+    if (onNodeDeselect) {
+      onNodeDeselect();
+    }
   };
 
   useImperativeHandle(ref, () => ({
-    addNode,
+    addHierarchy,
     generateImages,
     toggleImageGeneration: () => setShowImageGeneration((prev) => !prev),
   }));
@@ -238,7 +215,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
               <UserMessage
                 content={msg.content}
                 timestamp={msg.timestamp}
-                linkedNodes={msg.linkedNodes || []}
+                linkedHierarchy={msg.hierarchy || null}
               />
             ) : msg.messageType === 'system' ? (
               <>
@@ -271,8 +248,8 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
       <div className="action-div">
         <div className="side-by-side">
-          {(selectedNodes.length > 0 || showImageGeneration) && (
-            <NodesContainer selectedNodes={selectedNodes} onRemoveNode={removeNode} />
+          {selectedHierarchy && !showImageGeneration && (
+            <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveHierarchy={removeHierarchy} />
           )}
           {showImageGeneration && (
             <div className="image-generation-wrapper">
@@ -280,13 +257,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
                 x
               </button>
               <ImageGeneration
-                attachedNodes={selectedNodes}
+                attachedHierarchy={selectedHierarchy}
                 generateImages={generateImages}
               />
             </div>
           )}
         </div>
-        {selectedNodes.length === 0 && !showImageGeneration && (
+        {!selectedHierarchy && !showImageGeneration && (
           <div>Click a node to attach it to your message!</div>
         )}
         {!showImageGeneration && (

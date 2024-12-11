@@ -7,23 +7,23 @@ import './ProjectDetailsPage.css';
 const ProjectDetailsPage = () => {
   const { projectId } = useParams();
   const chatBoxRef = useRef(null); // Reference to the ChatBox
-  const [selectedNodes, setSelectedNodes] = useState([]); // Track selected nodes
+  const [selectedHierarchy, setSelectedHierarchy] = useState(null); // Track the selected hierarchy
   const [selectedNodeForImageGeneration, setSelectedNodeForImageGeneration] = useState(null); // Track node for image generation
 
-  const handleNodeClick = (node) => {
-    // Add node to the selected list if not already selected
-    if (!selectedNodes.some((selected) => selected.id === node.id)) {
-      setSelectedNodes((prevSelected) => [...prevSelected, node]);
+  const handleHierarchyChange = (hierarchy) => {
+    setSelectedHierarchy(hierarchy);
 
-      if (chatBoxRef.current) {
-        chatBoxRef.current.addNode(node); // Call the addNode method in ChatBox
-      }
+    if (chatBoxRef.current && hierarchy) {
+      chatBoxRef.current.addHierarchy(hierarchy); // Update the hierarchy in ChatBox
     }
   };
 
-  const handleNodeDeselect = (nodeId) => {
-    // Remove node from the selected list
-    setSelectedNodes((prevSelected) => prevSelected.filter((node) => node.id !== nodeId));
+  const handleNodeDeselect = () => {
+    setSelectedHierarchy(null);
+
+    if (chatBoxRef.current) {
+      chatBoxRef.current.removeHierarchy(); // Clear the hierarchy in ChatBox
+    }
   };
 
   const handleGenerateImages = (node) => {
@@ -32,7 +32,7 @@ const ProjectDetailsPage = () => {
 
   useEffect(() => {
     if (selectedNodeForImageGeneration && chatBoxRef.current) {
-      chatBoxRef.current.addNode(selectedNodeForImageGeneration);
+      chatBoxRef.current.addHierarchy(selectedNodeForImageGeneration);
       chatBoxRef.current.toggleImageGeneration(); // Open the image generation UI
     }
   }, [selectedNodeForImageGeneration]);
@@ -43,9 +43,8 @@ const ProjectDetailsPage = () => {
         <SpaceBox
           projectId={projectId}
           spaceName="Material"
-          onNodeClick={handleNodeClick}
-          selectedNodes={selectedNodes}
-          onNodeDeselect={handleNodeDeselect}
+          onHierarchyChange={handleHierarchyChange}
+          selectedHierarchy={selectedHierarchy}
           onGenerateImages={handleGenerateImages} // Pass the callback
         />
       </div>
@@ -60,9 +59,8 @@ const ProjectDetailsPage = () => {
         <SpaceBox
           projectId={projectId}
           spaceName="Conceptual"
-          onNodeClick={handleNodeClick}
-          selectedNodes={selectedNodes}
-          onNodeDeselect={handleNodeDeselect}
+          onHierarchyChange={handleHierarchyChange}
+          selectedHierarchy={selectedHierarchy}
           onGenerateImages={handleGenerateImages} // Pass the callback
         />
       </div>

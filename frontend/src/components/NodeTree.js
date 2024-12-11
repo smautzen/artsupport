@@ -106,7 +106,6 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   }, [projectId, space]);
 
   const handleExploreClick = (element) => {
-    console.log("Explore button clicked for element:", element);
     setActivePopup((prev) => (prev === element.id ? null : element.id));
   };
 
@@ -123,62 +122,57 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     };
   }, []);
 
-  const handleNodeClick = (node, event) => {
-    const isSelected = selectedNodes.some((selected) => selected.id === node.id);
-    if (isSelected) {
-      onNodeDeselect(node.id);
-      return;
+  const handleNodeClick = (node, parent, grandparent, event) => {
+    let updatedSelection = {
+      space,
+      category: null,
+      node: null,
+      childNode: null,
+    };
+
+    if (!parent && !grandparent) {
+      // Category clicked
+      updatedSelection.category = node;
+    } else if (!grandparent) {
+      // Node clicked
+      updatedSelection.category = parent;
+      updatedSelection.node = node;
+    } else {
+      // Child node clicked
+      updatedSelection.category = grandparent;
+      updatedSelection.node = parent;
+      updatedSelection.childNode = node;
     }
 
-    const rect = event.target.getBoundingClientRect();
-    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left';
-    const animationId = Date.now();
+    console.log('Node Clicked:', {
+      node,
+      parent,
+      grandparent,
+      updatedSelection,
+    });
 
-    setAnimations((prevAnimations) => [
-      ...prevAnimations,
-      {
-        id: animationId,
-        title: node.title || 'Unnamed Node',
-        target: targetSpace,
-        startX: rect.left + rect.width / 2,
-        startY: rect.top + rect.height / 2,
-      },
-    ]);
+    if (event) {
+      const rect = event.target.getBoundingClientRect();
+      const targetSpace = space === 'material' ? 'saved-right' : 'saved-left';
+      const animationId = Date.now();
 
-    setTimeout(() => {
-      setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
-    }, 1000);
+      setAnimations((prevAnimations) => [
+        ...prevAnimations,
+        {
+          id: animationId,
+          title: node?.title || parent?.title || grandparent?.title || 'Unnamed Node',
+          target: targetSpace,
+          startX: rect.left + rect.width / 2,
+          startY: rect.top + rect.height / 2,
+        },
+      ]);
 
-    onNodeClick(node);
-  };
-
-  const handleCategoryClick = (category, event) => {
-    const isSelected = selectedNodes.some((selected) => selected.id === category.id);
-    if (isSelected) {
-      onNodeDeselect(category.id);
-      return;
+      setTimeout(() => {
+        setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
+      }, 1000);
     }
 
-    const rect = event.target.getBoundingClientRect();
-    const targetSpace = space === 'material' ? 'saved-right' : 'saved-left';
-    const animationId = Date.now();
-
-    setAnimations((prevAnimations) => [
-      ...prevAnimations,
-      {
-        id: animationId,
-        title: category.title || 'Unnamed Category',
-        target: targetSpace,
-        startX: rect.left + rect.width / 2,
-        startY: rect.top + rect.height / 2,
-      },
-    ]);
-
-    setTimeout(() => {
-      setAnimations((prevAnimations) => prevAnimations.filter((anim) => anim.id !== animationId));
-    }, 1000);
-
-    onNodeClick(category);
+    onNodeClick(updatedSelection);
   };
 
   const toggleCollapse = (id) => {
@@ -188,7 +182,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     }));
   };
 
-  const renderNodes = (nodes) =>
+  const renderNodes = (nodes, parent, grandparent) =>
     nodes.map((node) => {
       const icon = nodeTypeIcons[node.type] || textNodeIcon;
 
@@ -207,12 +201,9 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
       return (
         <div key={node.id} className="node">
-          <div className="node-content" style={{ position: 'relative' }}>
+          <div className="node-content">
             <strong>
-              <span
-                className="node-title"
-                onClick={(event) => handleNodeClick(node, event)}
-              >
+              <span className="node-title" onClick={(event) => handleNodeClick(node, parent, grandparent, event)}>
                 {node.title}
               </span>
             </strong>
@@ -221,21 +212,16 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             <button className="explore-button" onClick={() => handleExploreClick(node)}>Explore</button>
             {activePopup === node.id && (
               <div className="explore-options-popup">
-                <button
-                  className="explore-button"
-                  onClick={() => onGenerateImages(node)} // Trigger the image generation callback
-                >
+                <button className="explore-button" onClick={() => onGenerateImages(node)}>
                   Generate Images
                 </button>
                 <button className="explore-button">Get Suggestions</button>
               </div>
             )}
           </div>
-          {!collapsedItems[node.id] &&
-            node.childNodes &&
-            node.childNodes.length > 0 && (
-              <div className="node-children">{renderNodes(node.childNodes)}</div>
-            )}
+          {!collapsedItems[node.id] && node.childNodes && node.childNodes.length > 0 && (
+            <div className="node-children">{renderNodes(node.childNodes, node, parent)}</div>
+          )}
         </div>
       );
     });
@@ -243,21 +229,15 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const renderTree = (tree) =>
     tree.map((category) => (
       <div key={category.id} className="category">
-        <div className="category-content" style={{ position: 'relative' }}>
-          <span
-            className="category-title"
-            onClick={(event) => handleCategoryClick(category, event)}
-          >
+        <div className="category-content">
+          <span className="category-title" onClick={(event) => handleNodeClick(category, null, null, event)}>
             {category.title}
           </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
           <button className="explore-button" onClick={() => handleExploreClick(category)}>Explore</button>
           {activePopup === category.id && (
             <div className="explore-options-popup">
-              <button
-                className="explore-button"
-                onClick={() => onGenerateImages(category)} // Trigger the image generation callback for category
-              >
+              <button className="explore-button" onClick={() => onGenerateImages(category)}>
                 Generate Images
               </button>
               <button className="explore-button">Get Suggestions</button>
@@ -267,7 +247,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
         {!collapsedItems[category.id] && (
           <div className="category-children">
             <div>{category.description}</div>
-            {renderNodes(category.nodes)}
+            {renderNodes(category.nodes, category, null)}
           </div>
         )}
       </div>

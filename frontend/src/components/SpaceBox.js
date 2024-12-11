@@ -7,7 +7,7 @@ import materialSpaceIcon from '../assets/materialspace.png';
 import conceptualSpaceIcon from '../assets/conceptualspace.png';
 import helpIcon from '../assets/help.png';
 
-const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDeselect, onGenerateImages }) => {
+const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, onGenerateImages }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const icon = spaceName.toLowerCase() === 'material' ? materialSpaceIcon : conceptualSpaceIcon;
@@ -21,6 +21,18 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDese
     spaceName.toLowerCase() === 'material'
       ? 'This space includes all physical tools, materials, and techniques used to create the work.'
       : 'This space includes abstract ideas, themes, and emotions guiding the creative process.';
+
+  const handleNodeClick = (hierarchy) => {
+    if (onHierarchyChange) {
+      onHierarchyChange(hierarchy);
+    }
+  };
+
+  const handleNodeDeselect = () => {
+    if (onHierarchyChange) {
+      onHierarchyChange(null);
+    }
+  };
 
   return (
     <div className={`space-box ${spaceName.toLowerCase()}-space`}>
@@ -44,9 +56,9 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDese
       <NodeTree
         projectId={projectId}
         space={spaceName.toLowerCase()}
-        onNodeClick={onNodeClick}
-        selectedNodes={selectedNodes}
-        onNodeDeselect={onNodeDeselect}
+        onNodeClick={handleNodeClick}
+        selectedHierarchy={selectedHierarchy}
+        onNodeDeselect={handleNodeDeselect}
         onGenerateImages={onGenerateImages} // Pass the callback to NodeTree
       />
       <DefaultCategorySuggestions spaceName={spaceName.toLowerCase()} projectId={projectId} />
