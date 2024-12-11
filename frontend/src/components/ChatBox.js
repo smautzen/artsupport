@@ -175,6 +175,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
+
   const addNode = (node) => {
     setSelectedNodes((prevNodes) => {
       const isAlreadySelected = prevNodes.some((n) => n.id === node.id);
@@ -197,6 +198,8 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   useImperativeHandle(ref, () => ({
     addNode,
+    generateImages,
+    toggleImageGeneration: () => setShowImageGeneration((prev) => !prev),
   }));
 
   const toggleImageGeneration = () => {

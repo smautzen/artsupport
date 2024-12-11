@@ -7,7 +7,7 @@ import materialSpaceIcon from '../assets/materialspace.png';
 import conceptualSpaceIcon from '../assets/conceptualspace.png';
 import helpIcon from '../assets/help.png';
 
-const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDeselect }) => {
+const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDeselect, onGenerateImages }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const icon = spaceName.toLowerCase() === 'material' ? materialSpaceIcon : conceptualSpaceIcon;
@@ -47,9 +47,10 @@ const SpaceBox = ({ projectId, spaceName, onNodeClick, selectedNodes, onNodeDese
         onNodeClick={onNodeClick}
         selectedNodes={selectedNodes}
         onNodeDeselect={onNodeDeselect}
+        onGenerateImages={onGenerateImages} // Pass the callback to NodeTree
       />
       <DefaultCategorySuggestions spaceName={spaceName.toLowerCase()} projectId={projectId} />
-</div>
+    </div>
   );
 };
 

@@ -19,7 +19,7 @@ const nodeTypeIcons = {
   palette: paletteNodeIcon,
 };
 
-const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect }) => {
+const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect, onGenerateImages }) => {
   const [treeData, setTreeData] = useState([]);
   const [collapsedItems, setCollapsedItems] = useState({});
   const [animations, setAnimations] = useState([]);
@@ -221,8 +221,13 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             <button className="explore-button" onClick={() => handleExploreClick(node)}>Explore</button>
             {activePopup === node.id && (
               <div className="explore-options-popup">
+                <button
+                  className="explore-button"
+                  onClick={() => onGenerateImages(node)} // Trigger the image generation callback
+                >
+                  Generate Images
+                </button>
                 <button className="explore-button">Get Suggestions</button>
-                <button className="explore-button">Generate Images</button>
               </div>
             )}
           </div>
@@ -249,8 +254,13 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
           <button className="explore-button" onClick={() => handleExploreClick(category)}>Explore</button>
           {activePopup === category.id && (
             <div className="explore-options-popup">
+              <button
+                className="explore-button"
+                onClick={() => onGenerateImages(category)} // Trigger the image generation callback for category
+              >
+                Generate Images
+              </button>
               <button className="explore-button">Get Suggestions</button>
-              <button className="explore-button">Generate Images</button>
             </div>
           )}
         </div>
