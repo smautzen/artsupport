@@ -133,6 +133,41 @@
   animation: glide-saved-left 1s forwards;
 }
 
+.explore-options-popup {
+  position: absolute;
+  top: 100%; /* Position below the Explore button */
+  left: 0;
+  background-color: white;
+  border: 1px solid gray;
+  border-radius: 5px;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  z-index: 10; /* Ensure it appears above other content */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.explore-button {
+  background-color: blue;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.explore-button:hover {
+  background-color: darkblue;
+}
+
+.category-content {
+  position: relative; /* Ensure popup is positioned relative to the category content */
+}
+
+.node-content {
+  position: relative; /* Ensure popup is positioned relative to the node content */
+}
 
 
 

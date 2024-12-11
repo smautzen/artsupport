@@ -24,6 +24,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const [collapsedItems, setCollapsedItems] = useState({});
   const [animations, setAnimations] = useState([]);
   const [error, setError] = useState(null);
+  const [activePopup, setActivePopup] = useState(null);
 
   useEffect(() => {
     if (!projectId || !space) {
@@ -105,8 +106,22 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   }, [projectId, space]);
 
   const handleExploreClick = (element) => {
-    console.log('Explore clicked for:', element);
+    console.log("Explore button clicked for element:", element);
+    setActivePopup((prev) => (prev === element.id ? null : element.id));
   };
+
+  const handleGlobalClick = (event) => {
+    if (!event.target.closest('.explore-options-popup') && !event.target.closest('.explore-button')) {
+      setActivePopup(null);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  }, []);
 
   const handleNodeClick = (node, event) => {
     const isSelected = selectedNodes.some((selected) => selected.id === node.id);
@@ -168,8 +183,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
   const toggleCollapse = (id) => {
     setCollapsedItems((prev) => ({
-
-...prev,
+      ...prev,
       [id]: !prev[id],
     }));
   };
@@ -193,7 +207,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
       return (
         <div key={node.id} className="node">
-          <div className="node-content">
+          <div className="node-content" style={{ position: 'relative' }}>
             <strong>
               <span
                 className="node-title"
@@ -204,7 +218,13 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             {renderNodeComponent(node)}
-            <button onClick={() => handleExploreClick(node)}>Explore</button>
+            <button className="explore-button" onClick={() => handleExploreClick(node)}>Explore</button>
+            {activePopup === node.id && (
+              <div className="explore-options-popup">
+                <button className="explore-button">Get Suggestions</button>
+                <button className="explore-button">Generate Images</button>
+              </div>
+            )}
           </div>
           {!collapsedItems[node.id] &&
             node.childNodes &&
@@ -218,7 +238,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const renderTree = (tree) =>
     tree.map((category) => (
       <div key={category.id} className="category">
-        <div className="category-content">
+        <div className="category-content" style={{ position: 'relative' }}>
           <span
             className="category-title"
             onClick={(event) => handleCategoryClick(category, event)}
@@ -226,7 +246,13 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             {category.title}
           </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
-          <button onClick={() => handleExploreClick(category)}>Explore</button>
+          <button className="explore-button" onClick={() => handleExploreClick(category)}>Explore</button>
+          {activePopup === category.id && (
+            <div className="explore-options-popup">
+              <button className="explore-button">Get Suggestions</button>
+              <button className="explore-button">Generate Images</button>
+            </div>
+          )}
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
