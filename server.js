@@ -452,7 +452,7 @@ app.post('/likeSuggestion', async (req, res) => {
         await categoryRef.collection('nodes').add({
           title,
           description: description || 'No description provided',
-          type: 'text', // Ensure correct type for nodes
+          type: 'text',
           createdAt: new Date().toISOString(),
         });
       } else {
@@ -462,7 +462,7 @@ app.post('/likeSuggestion', async (req, res) => {
         await categoryDoc.ref.collection('nodes').add({
           title,
           description: description || 'No description provided',
-          type: 'text', // Ensure correct type for nodes
+          type: 'text',
           createdAt: new Date().toISOString(),
         });
       }
@@ -474,6 +474,89 @@ app.post('/likeSuggestion', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
+app.post('/likeImage', async (req, res) => {
+  try {
+    const { projectId, messageId, suggestionIndex } = req.body;
+
+    console.log('Received /likeImage request:', req.body);
+
+    if (!projectId || !messageId || suggestionIndex === undefined) {
+      console.error('Missing required fields:', { projectId, messageId, suggestionIndex });
+      return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
+    }
+
+    const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
+    const messageDoc = await messageRef.get();
+    if (!messageDoc.exists) {
+      console.error(`Message not found: Project ID: ${projectId}, Message ID: ${messageId}`);
+      return res.status(404).send({ error: 'Message not found.' });
+    }
+
+    const messageData = messageDoc.data();
+    const suggestion = messageData.suggestions[suggestionIndex];
+
+    console.log('Fetched suggestion:', suggestion);
+
+    if (!suggestion || !suggestion.url) {
+      console.error('Invalid image suggestion:', suggestion);
+      return res.status(400).send({ error: 'Invalid image suggestion.' });
+    }
+
+    suggestion.liked = true;
+
+    // Save the liked image to the conceptual/images collection
+    const imagesCollectionRef = db.collection('projects').doc(projectId).collection('conceptual');
+    const imagesCategorySnapshot = await imagesCollectionRef.where('title', '==', 'Images').get();
+
+    let imagesCategoryRef;
+    if (imagesCategorySnapshot.empty) {
+      console.log('Creating "Images" category in conceptual space...');
+      imagesCategoryRef = await imagesCollectionRef.add({
+        title: 'Images',
+        description: 'A collection of liked images.',
+        type: 'category',
+        createdAt: new Date().toISOString(),
+        space: 'conceptual',
+      });
+    } else {
+      imagesCategoryRef = imagesCategorySnapshot.docs[0].ref;
+      console.log('"Images" category already exists.');
+    }
+
+    // Check if a node already exists in the "Images" category
+    const existingNodesSnapshot = await imagesCategoryRef.collection('nodes').where('title', '==', suggestion.title).get();
+
+    if (!existingNodesSnapshot.empty) {
+      const existingNodeRef = existingNodesSnapshot.docs[0].ref;
+
+      console.log(`Appending URL to existing node: ${existingNodeRef.id}`);
+      await existingNodeRef.update({
+        images: admin.firestore.FieldValue.arrayUnion(suggestion.url), // Append the URL to the array
+      });
+    } else {
+      console.log('Creating a new node for the image...');
+      await imagesCategoryRef.collection('nodes').add({
+        title: suggestion.title,
+        description: suggestion.description,
+        images: [suggestion.url], // Save the URL in an array
+        type: 'image',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // Update Firestore with the updated suggestions
+    console.log('Updating suggestions in Firestore...');
+    await messageRef.update({ suggestions: messageData.suggestions });
+
+    console.log('Successfully processed /likeImage request.');
+    res.status(201).send({ success: true });
+  } catch (error) {
+    console.error('Error in /likeImage:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
 
 const fetchOntology = async (projectId) => {
   try {
@@ -657,7 +740,6 @@ app.post('/generate-image', async (req, res) => {
   try {
     const { projectId, prompt, n, attachedHierarchy } = req.body;
 
-    // Debugging: Log the request body
     console.log('Received image generation request:', { projectId, prompt, n, attachedHierarchy });
 
     if (!projectId || !prompt) {
@@ -665,7 +747,6 @@ app.post('/generate-image', async (req, res) => {
       return res.status(400).send({ error: 'Project ID and prompt are required.' });
     }
 
-    // Step 1: Save user message to Firestore
     console.log('Saving user message to Firestore...');
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
     const userMessageRef = await chatCollectionRef.add({
@@ -678,32 +759,30 @@ app.post('/generate-image', async (req, res) => {
     const userMessageId = userMessageRef.id;
     console.log('User message created in Firestore with ID:', userMessageId);
 
-    // Step 2: Generate images with OpenAI
     console.log('Generating images from OpenAI with prompt:', prompt);
     const openaiResponse = await openai.images.generate({
       prompt,
-      n: n || 1, // Default to 1 image
+      n: n || 1,
       size: '256x256',
-      response_format: 'b64_json', // Ensure base64 format
+      response_format: 'b64_json',
     });
 
     console.log('OpenAI image generation response received:', openaiResponse);
 
-    // Step 3: Upload images to imgbb and collect URLs
     console.log('Uploading images to imgbb...');
     const imageUrls = await Promise.all(
       openaiResponse.data.map(async (image, index) => {
         try {
           const formData = new FormData();
           formData.append('key', process.env.IMGBB_API_KEY);
-          formData.append('image', image.b64_json); // Base64 data from OpenAI
+          formData.append('image', image.b64_json);
 
           const imgbbResponse = await axios.post('https://api.imgbb.com/1/upload', formData, {
             headers: formData.getHeaders(),
           });
           console.log(`Image ${index + 1} uploaded to imgbb successfully.`);
           return {
-            url: imgbbResponse.data.data.url, // Extract URL from the response
+            url: imgbbResponse.data.data.url,
             title: `Image ${index + 1}`,
             liked: false,
           };
@@ -716,52 +795,51 @@ app.post('/generate-image', async (req, res) => {
 
     console.log('All images uploaded successfully. Image URLs:', imageUrls);
 
-    // Step 4: Prepare Firestore chat entity for system response
     const chatData = {
       content: `Here are the generated images based on your prompt: "${prompt}"`,
       messageType: 'system',
       timestamp: new Date().toISOString(),
       suggestions: imageUrls.map((image, index) => {
-        const attachedNode = attachedHierarchy || {};
-        const destination = {
-          space: attachedNode.space,
-          categoryId: attachedNode.category?.id || null,
-          nodeId: attachedNode.node?.id || null,
-          childNodeId: attachedNode.childNode?.id || null,
-        };
+        const destination = attachedHierarchy
+          ? {
+              space: attachedHierarchy.space,
+              categoryId: attachedHierarchy.category?.id || null,
+              nodeId: attachedHierarchy.node?.id || null,
+              childNodeId: attachedHierarchy.childNode?.id || null,
+            }
+          : {
+              space: null,
+              categoryId: null,
+              nodeId: null,
+              childNodeId: null,
+            };
 
         return {
           title: image.title,
           description: `Generated based on the prompt: "${prompt}"`,
-          id: uuidv4(), // Unique ID
+          id: uuidv4(),
           reasoning: 'Generated by AI based on user input.',
-          space: attachedNode.space, // Material or conceptual
+          space: destination.space, // Can be null
           url: image.url,
           liked: image.liked,
-          destination, // Add the hierarchy object here
+          destination,
         };
       }),
     };
 
-    // Debugging: Log the chatData structure
     console.log('Prepared system message data for Firestore:', chatData);
 
-    // Step 5: Save system response to Firestore
     console.log('Saving generated image data to Firestore...');
     const systemMessageRef = await chatCollectionRef.add(chatData);
 
     console.log('System message created in Firestore with ID:', systemMessageRef.id);
 
-    // Step 6: Send response back to the client
     res.status(201).send(chatData);
   } catch (error) {
-    // Debugging: Log the full error
     console.error('Error handling generate-image request:', error);
     res.status(500).send({ error: 'Failed to generate images.' });
   }
 });
-
-
 
 app.post('/likeDefaultSuggestion', async (req, res) => {
   try {

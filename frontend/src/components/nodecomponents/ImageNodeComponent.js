@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './ImageNodeComponent.css'; // Include this for styling
+import './ImageNodeComponent.css';
 
 const ImageNodeComponent = ({ node }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -12,11 +12,16 @@ const ImageNodeComponent = ({ node }) => {
     setSelectedImage(null); // Close the overlay by resetting the state
   };
 
+  if (!node || !node.description) {
+    console.error('Invalid node data:', node);
+    return <div className="image-node">Invalid node</div>;
+  }
+
   return (
     <div className="image-node">
       <p>{node.description}</p>
       <div className="image-row">
-        {node.images.map((uri, index) => (
+        {(node.images || []).map((uri, index) => (
           <img
             key={index}
             src={uri}
