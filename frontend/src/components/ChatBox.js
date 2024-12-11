@@ -137,30 +137,31 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
-  const generateImages = async ({ prompt, n, attachedHierarchy }) => {
-    console.log('attachedHierarchy:', attachedHierarchy);
+  const generateImages = async ({ prompt, n }) => {
+    console.log('Preparing to generate images with the following details:');
+    console.log('Project ID:', projectId);
+    console.log('Prompt:', prompt);
+    console.log('Number of Images:', n);
+    console.log('Attached Hierarchy:', selectedHierarchy);
+  
     try {
-      setLoading(true);
-      setShowImageGeneration(false); // Hide the ImageGeneration component when a request is sent
-
       const payload = {
         projectId,
         prompt,
         n,
-        attachedHierarchy,
+        attachedHierarchy: selectedHierarchy, // Pass the full hierarchy
       };
-
-      console.log('Generating images with payload:', payload);
-
+  
+      console.log('Final payload being sent to server:', payload);
+  
       const response = await axios.post('http://localhost:4000/generate-image', payload);
       console.log('Response from server:', response);
-
-      // System message will be reflected via Firestore subscription
     } catch (error) {
       console.error('Error generating images:', error);
-      setLoading(false);
     }
   };
+  
+  
 
   const addHierarchy = (hierarchy) => {
     setSelectedHierarchy(hierarchy);

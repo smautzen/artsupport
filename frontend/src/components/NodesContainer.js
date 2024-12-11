@@ -4,24 +4,12 @@ import './NodesContainer.css';
 const NodesContainer = ({ selectedHierarchy, onRemoveNode }) => {
   const extractLastNode = (hierarchy) => {
     if (!hierarchy) return null;
-    console.log('Initial hierarchy:', hierarchy);
-
-    // Determine the deepest node in the hierarchy
-    if (hierarchy.childNode) {
-      console.log('Extracted last node (childNode):', hierarchy.childNode);
-      return hierarchy.childNode;
+    let current = hierarchy;
+    while (current && current.childNode) {
+      current = current.childNode;
     }
-    if (hierarchy.node) {
-      console.log('Extracted last node (node):', hierarchy.node);
-      return hierarchy.node;
-    }
-    if (hierarchy.category) {
-      console.log('Extracted last node (category):', hierarchy.category);
-      return hierarchy.category;
-    }
-
-    console.error('No valid node found in hierarchy:', hierarchy);
-    return null;
+    console.log('Final extracted node:', current); // Reduced repetitive logging
+    return current;
   };
 
   const validateHierarchy = (hierarchy) => {
@@ -42,7 +30,7 @@ const NodesContainer = ({ selectedHierarchy, onRemoveNode }) => {
   const handleRemoveClick = () => {
     console.log('Attempting to remove hierarchy:', selectedHierarchy);
     if (onRemoveNode) {
-      console.log('Last node being removed:', lastNode);
+      console.log('Node being removed:', lastNode);
       onRemoveNode(selectedHierarchy);
     } else {
       console.error('onRemoveNode function is not defined');
