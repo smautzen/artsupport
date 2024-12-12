@@ -738,7 +738,7 @@ app.post('/generate-image', async (req, res) => {
       messageType: 'user',
       content: `Generate ${n || 1} image(s) based on: "${prompt}"`,
       timestamp: new Date().toISOString(),
-      linkedHierarchy: attachedHierarchy || null,
+      hierarchy: attachedHierarchy || null,
     });
 
     const userMessageId = userMessageRef.id;

@@ -133,7 +133,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     console.log('Number of Images:', n);
     console.log('Attached Hierarchy:', selectedHierarchy);
   
-/*     try {
+    try {
       const payload = {
         projectId,
         prompt,
@@ -147,7 +147,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       console.log('Response from server:', response);
     } catch (error) {
       console.error('Error generating images:', error);
-    } */
+    }
   };
   
   
