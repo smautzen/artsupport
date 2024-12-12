@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
@@ -25,6 +25,8 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const [animations, setAnimations] = useState([]);
   const [error, setError] = useState(null);
   const [activePopup, setActivePopup] = useState(null);
+
+  const treeContainerRef = useRef();
 
   useEffect(() => {
     if (!projectId || !space) {
@@ -104,6 +106,20 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
     fetchTreeData();
   }, [projectId, space]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (treeContainerRef.current && !treeContainerRef.current.contains(event.target)) {
+        setActivePopup(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const constructHierarchy = (node, parent, grandparent) => {
     return {
@@ -236,7 +252,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     ));
 
   return (
-    <div className="node-tree">
+    <div className="node-tree" ref={treeContainerRef}>
       {treeData.length === 0 ? <p>Select categories to add to space!</p> : renderTree(treeData)}
       {animations.map((animation) => (
         <div
