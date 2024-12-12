@@ -144,8 +144,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     if (!input.trim()) return;
 
     try {
-      setInput('');
-      setSelectedHierarchy(null);
       setLoading(true);
 
       const payload = {
@@ -153,6 +151,11 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         message: input,
         hierarchy: selectedHierarchy,
       };
+
+      setInput('');
+      setSelectedHierarchy(null);
+
+      console.log('PL:', payload);
 
       await axios.post('http://localhost:4000/testchat', payload);
     } catch (error) {

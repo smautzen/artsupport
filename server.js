@@ -292,46 +292,39 @@ const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
 
 app.post('/testchat', async (req, res) => {
   try {
-    const { projectId, message, nodeReferences } = req.body;
+    const { projectId, message, hierarchy } = req.body;
 
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
 
-        // Ensure nodeReferences is an array
-        const references = Array.isArray(nodeReferences) ? nodeReferences : [];
-
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
 
-const userMessageRef = await chatCollectionRef.add({
-  messageType: 'user',
-  content: message,
-  timestamp: new Date().toISOString(),
-  linkedNodes: references.map((node) => ({
-    id: node.id,
-    title: node.title,
-    description: node.description || 'No description available', // Ensure description is included
-  })),
-});
+    const userMessageRef = await chatCollectionRef.add({
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      hierarchy: hierarchy || null, // Save the full hierarchy
+    });
 
     const systemResponse = `Responding to: "${message}"`;
 
     const suggestions = [
       {
-        id: uuidv4(), // Unique ID for the suggestion
+        id: uuidv4(),
         space: 'material',
         type: 'category',
         title: 'Brush Styles',
         description: 'Explore different brush techniques',
         nodes: [
           {
-            id: uuidv4(), // Unique ID for the node
+            id: uuidv4(),
             type: 'text',
             title: 'Watercolor Brushes',
             description: 'Brushes designed for soft, flowing effects',
           },
           {
-            id: uuidv4(), // Unique ID for the node
+            id: uuidv4(),
             type: 'text',
             title: 'Oil Brushes',
             description: 'Thick, textured strokes for oil-like effects',
@@ -339,20 +332,20 @@ const userMessageRef = await chatCollectionRef.add({
         ],
       },
       {
-        id: uuidv4(), // Unique ID for the suggestion
+        id: uuidv4(),
         space: 'conceptual',
         type: 'category',
         title: 'Mood Inspiration',
         description: 'Concepts for evoking specific emotions',
         nodes: [
           {
-            id: uuidv4(), // Unique ID for the node
+            id: uuidv4(),
             type: 'text',
             title: 'Serenity',
             description: 'Ideas for creating a peaceful atmosphere',
           },
           {
-            id: uuidv4(), // Unique ID for the node
+            id: uuidv4(),
             type: 'text',
             title: 'Tension',
             description: 'Techniques to depict dramatic or intense moments',
@@ -365,7 +358,7 @@ const userMessageRef = await chatCollectionRef.add({
       messageType: 'system',
       content: systemResponse,
       timestamp: new Date().toISOString(),
-      suggestions: suggestions,
+      suggestions,
     });
 
     res.status(201).send({ messageId: userMessageRef.id, suggestions });
@@ -374,6 +367,8 @@ const userMessageRef = await chatCollectionRef.add({
     res.status(500).send({ error: error.message });
   }
 });
+
+
 
 app.get('/test-openai', async (req, res) => {
   try {
