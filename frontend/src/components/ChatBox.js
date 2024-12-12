@@ -82,40 +82,63 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
+  
     try {
       setInput('');
-      setSelectedHierarchy(null);
       setLoading(true);
-
+  
       const payload = {
         projectId,
         message: input,
-        hierarchy: selectedHierarchy,
       };
-
-      console.log('Payload being sent:', payload);
-
-      const response = await axios.post('http://localhost:4000/chat', payload);
-      console.log('Response from server:', response);
-
-      const { messageId } = response.data;
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: messageId,
-          messageType: 'user',
-          content: input,
-          timestamp: new Date().toISOString(),
-          hierarchy: selectedHierarchy, // Add attached hierarchy here
-        },
-      ]);
+  
+      // Check if there is a selected hierarchy
+      if (selectedHierarchy) {
+        payload.nodeReferences = selectedHierarchy;
+        console.log('Sending to /explore-nodes with payload:', payload);
+  
+        const response = await axios.post('http://localhost:4000/explore-nodes', payload);
+        console.log('Response from /explore-nodes:', response);
+  
+        const { messageId } = response.data;
+  
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: messageId,
+            messageType: 'user',
+            content: input,
+            timestamp: new Date().toISOString(),
+            linkedHierarchy: selectedHierarchy, // Save attached nodes here
+          },
+        ]);
+      } else {
+        console.log('Sending to /chat with payload:', payload);
+  
+        const response = await axios.post('http://localhost:4000/chat', payload);
+        console.log('Response from /chat:', response);
+  
+        const { messageId } = response.data;
+  
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: messageId,
+            messageType: 'user',
+            content: input,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
     } catch (error) {
       console.error('Error while sending message:', error);
       setLoading(false);
+    } finally {
+      setLoading(false);
+      setSelectedHierarchy(null); // Clear selected nodes after sending
     }
   };
+  
 
   const sendTestMessage = async () => {
     if (!input.trim()) return;
@@ -144,7 +167,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     console.log('Number of Images:', n);
     console.log('Attached Hierarchy:', selectedHierarchy);
   
-    try {
+/*     try {
       const payload = {
         projectId,
         prompt,
@@ -158,7 +181,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       console.log('Response from server:', response);
     } catch (error) {
       console.error('Error generating images:', error);
-    }
+    } */
   };
   
   
@@ -250,7 +273,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       <div className="action-div">
         <div className="side-by-side">
           {selectedHierarchy && !showImageGeneration && (
-            <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveHierarchy={removeHierarchy} />
+            <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
           )}
           {showImageGeneration && (
             <div className="image-generation-wrapper">

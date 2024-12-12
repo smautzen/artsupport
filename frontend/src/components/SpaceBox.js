@@ -23,6 +23,7 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
       : 'This space includes abstract ideas, themes, and emotions guiding the creative process.';
 
   const handleNodeClick = (hierarchy) => {
+    console.log('SpaceBox: Updated hierarchy received:', hierarchy);
     if (onHierarchyChange) {
       onHierarchyChange(hierarchy);
     }

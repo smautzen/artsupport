@@ -105,51 +105,19 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     fetchTreeData();
   }, [projectId, space]);
 
-  const handleExploreClick = (element) => {
-    setActivePopup((prev) => (prev === element.id ? null : element.id));
-  };
-
-  const handleGlobalClick = (event) => {
-    if (!event.target.closest('.explore-options-popup') && !event.target.closest('.explore-button')) {
-      setActivePopup(null);
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener('click', handleGlobalClick);
-    return () => {
-      document.removeEventListener('click', handleGlobalClick);
+  const constructHierarchy = (node, parent, grandparent) => {
+    return {
+      space,
+      category: grandparent || parent || node,
+      node: parent && !grandparent ? node : null,
+      childNode: grandparent ? node : null,
     };
-  }, []);
+  };
 
   const handleNodeClick = (node, parent, grandparent, event) => {
-    let updatedSelection = {
-      space,
-      category: null,
-      node: null,
-      childNode: null,
-    };
+    const hierarchy = constructHierarchy(node, parent, grandparent);
 
-    if (!parent && !grandparent) {
-      // Category clicked
-      updatedSelection.category = node;
-    } else if (!grandparent) {
-      // Node clicked
-      updatedSelection.category = parent;
-      updatedSelection.node = node;
-    } else {
-      // Child node clicked
-      updatedSelection.category = grandparent;
-      updatedSelection.node = parent;
-      updatedSelection.childNode = node;
-    }
-
-    console.log('Node Clicked:', {
-      node,
-      parent,
-      grandparent,
-      updatedSelection,
-    });
+    console.log('NodeTree: handleNodeClick constructed hierarchy:', hierarchy);
 
     if (event) {
       const rect = event.target.getBoundingClientRect();
@@ -172,7 +140,16 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
       }, 1000);
     }
 
-    onNodeClick(updatedSelection);
+    onGenerateImages(hierarchy);
+  };
+
+  const handleExploreClick = (node, parent, grandparent) => {
+    const hierarchy = constructHierarchy(node, parent, grandparent);
+
+    console.log('NodeTree: handleExploreClick constructed hierarchy:', hierarchy);
+
+    setActivePopup((prev) => (prev === node.id ? null : node.id));
+    onGenerateImages(hierarchy);
   };
 
   const toggleCollapse = (id) => {
@@ -209,10 +186,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
             {renderNodeComponent(node)}
-            <button className="explore-button" onClick={() => handleExploreClick(node)}>Explore</button>
+            <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
+              Explore
+            </button>
             {activePopup === node.id && (
               <div className="explore-options-popup">
-                <button className="explore-button" onClick={() => onGenerateImages(node)}>
+                <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
                   Generate Images
                 </button>
                 <button className="explore-button">Get Suggestions</button>
@@ -234,10 +213,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             {category.title}
           </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
-          <button className="explore-button" onClick={() => handleExploreClick(category)}>Explore</button>
+          <button className="explore-button" onClick={() => handleExploreClick(category, null, null)}>
+            Explore
+          </button>
           {activePopup === category.id && (
             <div className="explore-options-popup">
-              <button className="explore-button" onClick={() => onGenerateImages(category)}>
+              <button className="explore-button" onClick={() => handleExploreClick(category, null, null)}>
                 Generate Images
               </button>
               <button className="explore-button">Get Suggestions</button>

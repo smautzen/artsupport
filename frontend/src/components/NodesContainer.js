@@ -4,12 +4,20 @@ import './NodesContainer.css';
 const NodesContainer = ({ selectedHierarchy, onRemoveNode }) => {
   const extractLastNode = (hierarchy) => {
     if (!hierarchy) return null;
-    let current = hierarchy;
-    while (current && current.childNode) {
-      current = current.childNode;
+
+    if (hierarchy.childNode) {
+      return extractLastNode(hierarchy.childNode);
     }
-    console.log('Final extracted node:', current); // Reduced repetitive logging
-    return current;
+
+    if (hierarchy.node) {
+      return hierarchy.node;
+    }
+
+    if (hierarchy.category) {
+      return hierarchy.category;
+    }
+
+    return null;
   };
 
   const validateHierarchy = (hierarchy) => {
