@@ -140,6 +140,9 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         n,
         attachedHierarchy: selectedHierarchy, // Pass the full hierarchy
       };
+
+      removeHierarchy();
+      toggleImageGeneration();
   
       console.log('Final payload being sent to server:', payload);
   
