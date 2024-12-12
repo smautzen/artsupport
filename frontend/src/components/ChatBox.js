@@ -272,9 +272,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
       <div className="action-div">
         <div className="side-by-side">
-          {selectedHierarchy && !showImageGeneration && (
             <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
-          )}
           {showImageGeneration && (
             <div className="image-generation-wrapper">
               <button className="close-btn" onClick={toggleImageGeneration}>
@@ -287,9 +285,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
             </div>
           )}
         </div>
-        {!selectedHierarchy && !showImageGeneration && (
-          <div>Click a node to attach it to your message!</div>
-        )}
         {!showImageGeneration && (
           <button className="generate-images-btn" onClick={toggleImageGeneration}>
             Generate Images

@@ -4,7 +4,7 @@
     padding: 10px;
     margin-bottom: 15px;
     background-color: #f9f9f9;
-    max-height: 200px;
+    height: fit-content;
     overflow-y: auto;
   }
   

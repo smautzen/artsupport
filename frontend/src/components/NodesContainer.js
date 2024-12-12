@@ -22,15 +22,13 @@ const NodesContainer = ({ selectedHierarchy, onRemoveNode }) => {
 
   const validateHierarchy = (hierarchy) => {
     if (!hierarchy || typeof hierarchy !== 'object') {
-      console.error('Invalid hierarchy structure:', hierarchy);
       return false;
     }
     return true;
   };
 
   if (!validateHierarchy(selectedHierarchy)) {
-    console.error('Hierarchy validation failed.');
-    return <div className="nodes-container">Invalid hierarchy</div>;
+    return <div className="nodes-container">Click a node to attach it to your message!</div>;
   }
 
   const lastNode = extractLastNode(selectedHierarchy);

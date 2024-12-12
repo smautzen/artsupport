@@ -140,7 +140,9 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
       }, 1000);
     }
 
-    onGenerateImages(hierarchy);
+    if (onNodeClick) {
+      onNodeClick(hierarchy); // Notify the parent about the node click
+    }
   };
 
   const handleExploreClick = (node, parent, grandparent) => {
@@ -149,7 +151,6 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     console.log('NodeTree: handleExploreClick constructed hierarchy:', hierarchy);
 
     setActivePopup((prev) => (prev === node.id ? null : node.id));
-    onGenerateImages(hierarchy);
   };
 
   const toggleCollapse = (id) => {
