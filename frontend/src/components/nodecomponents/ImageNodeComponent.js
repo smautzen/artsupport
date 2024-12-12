@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './ImageNodeComponent.css';
 
 const ImageNodeComponent = ({ node }) => {
@@ -12,13 +12,9 @@ const ImageNodeComponent = ({ node }) => {
     setSelectedImage(null); // Close the overlay by resetting the state
   };
 
-  if (!node) {
-    return <div className="image-node">Loading...</div>;
-  }
-
-  if (!node.images || !Array.isArray(node.images)) {
-    console.error('Invalid node images:', node);
-    return <div className="image-node">Invalid node images</div>;
+  if (!node || !node.images || !Array.isArray(node.images) || node.images.length === 0) {
+    // Do not render anything if there are no images
+    return null;
   }
 
   return (
