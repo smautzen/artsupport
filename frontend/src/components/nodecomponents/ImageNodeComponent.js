@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ImageNodeComponent.css';
 
 const ImageNodeComponent = ({ node }) => {
@@ -12,22 +12,26 @@ const ImageNodeComponent = ({ node }) => {
     setSelectedImage(null); // Close the overlay by resetting the state
   };
 
-  if (!node || !node.description) {
-    console.error('Invalid node data:', node);
-    return <div className="image-node">Invalid node</div>;
+  if (!node) {
+    return <div className="image-node">Loading...</div>;
+  }
+
+  if (!node.images || !Array.isArray(node.images)) {
+    console.error('Invalid node images:', node);
+    return <div className="image-node">Invalid node images</div>;
   }
 
   return (
     <div className="image-node">
-      <p>{node.description}</p>
+      <h3>Images:</h3>
       <div className="image-row">
-        {(node.images || []).map((uri, index) => (
+        {node.images.map((image, index) => (
           <img
             key={index}
-            src={uri}
-            alt={`Image ${index + 1}`}
+            src={image.url}
+            alt={image.title || `Image ${index + 1}`}
             className="thumbnail"
-            onClick={() => handleImageClick(uri)} // Handle click to open overlay
+            onClick={() => handleImageClick(image.url)} // Handle click to open overlay
           />
         ))}
       </div>
