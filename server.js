@@ -490,7 +490,9 @@ app.post('/likeImage', async (req, res) => {
 
     suggestion.liked = true;
 
-    // Save the liked image to the conceptual/images collection
+    // If a destination was not provided, we save in default image location
+    if (suggestion.destination.space === null) {
+      // Save the liked image to the conceptual/images collection
     const imagesCollectionRef = db.collection('projects').doc(projectId).collection('conceptual');
     const imagesCategorySnapshot = await imagesCollectionRef.where('title', '==', 'Images').get();
 
@@ -536,6 +538,77 @@ app.post('/likeImage', async (req, res) => {
 
     console.log('Successfully processed /likeImage request.');
     res.status(201).send({ success: true });
+    } else {
+      // If a destination was provided, we save it at the appropriate place
+if (suggestion.destination.space && suggestion.destination.categoryId) {
+  const destinationRef = db
+    .collection('projects')
+    .doc(projectId)
+    .collection(suggestion.destination.space)
+    .doc(suggestion.destination.categoryId);
+
+  const destinationDoc = await destinationRef.get();
+
+  if (!destinationDoc.exists) {
+    console.error('Destination category not found:', suggestion.destination);
+    return res.status(404).send({ error: 'Destination category not found.' });
+  }
+
+  if (suggestion.destination.nodeId) {
+    // Save inside the specified node
+    const nodeRef = destinationRef.collection('nodes').doc(suggestion.destination.nodeId);
+    const nodeDoc = await nodeRef.get();
+
+    if (!nodeDoc.exists) {
+      console.error('Destination node not found:', suggestion.destination);
+      return res.status(404).send({ error: 'Destination node not found.' });
+    }
+
+    if (suggestion.destination.childNodeId) {
+      // Save inside the specified child node
+      const childNodeRef = nodeRef.collection('childNodes').doc(suggestion.destination.childNodeId);
+      const childNodeDoc = await childNodeRef.get();
+
+      if (!childNodeDoc.exists) {
+        console.error('Destination child node not found:', suggestion.destination);
+        return res.status(404).send({ error: 'Destination child node not found.' });
+      }
+
+      console.log('Saving image to child node:', suggestion.destination.childNodeId);
+      await childNodeRef.update({
+        images: admin.firestore.FieldValue.arrayUnion(suggestion.url),
+      });
+    } else {
+      // Save inside the specified node
+      console.log('Saving image to node:', suggestion.destination.nodeId);
+      await nodeRef.update({
+        images: admin.firestore.FieldValue.arrayUnion(suggestion.url),
+      });
+    }
+  } else {
+    // Save inside the category as a new node
+    console.log('Saving image to category as a new node:', suggestion.destination.categoryId);
+    await destinationRef.collection('nodes').add({
+      title: suggestion.title,
+      description: suggestion.description,
+      images: [suggestion.url],
+      type: 'image',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Update Firestore with the updated suggestions
+  console.log('Updating suggestions in Firestore...');
+  await messageRef.update({ suggestions: messageData.suggestions });
+
+  console.log('Successfully saved image to the specified destination.');
+  res.status(201).send({ success: true });
+} else {
+  console.error('Invalid destination details provided:', suggestion.destination);
+  res.status(400).send({ error: 'Invalid destination details provided.' });
+}
+    }
+    
   } catch (error) {
     console.error('Error in /likeImage:', error);
     res.status(500).send({ error: error.message });
