@@ -27,6 +27,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const [activePopup, setActivePopup] = useState(null);
 
   const treeContainerRef = useRef();
+  const popupRef = useRef();
 
   useEffect(() => {
     if (!projectId || !space) {
@@ -109,7 +110,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (treeContainerRef.current && !treeContainerRef.current.contains(event.target)) {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
         setActivePopup(null);
       }
     };
@@ -207,7 +208,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               Explore
             </button>
             {activePopup === node.id && (
-              <div className="explore-options-popup">
+              <div ref={popupRef} className="explore-options-popup">
                 <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
                   Generate Images
                 </button>
@@ -234,7 +235,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             Explore
           </button>
           {activePopup === category.id && (
-            <div className="explore-options-popup">
+            <div ref={popupRef} className="explore-options-popup">
               <button className="explore-button" onClick={() => handleExploreClick(category, null, null)}>
                 Generate Images
               </button>
@@ -245,7 +246,6 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
         {!collapsedItems[category.id] && (
           <div className="category-children">
             <div>{category.description}</div>
-            <ImageNodeComponent node={category} />
             {renderNodes(category.nodes, category, null)}
           </div>
         )}
