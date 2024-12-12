@@ -8,6 +8,7 @@ const port = process.env.PORT || 4000;
 const FormData = require('form-data');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
 
 // Use CORS middleware
 app.use(cors());
@@ -202,16 +203,13 @@ app.delete('/projects/:id', async (req, res) => {
 
 app.post('/chat', async (req, res) => {
   try {
-    const { projectId, message, nodeReferences } = req.body;
+    const { projectId, message, hierarchy } = req.body;
 
-    console.log('Received payload:', { projectId, message, nodeReferences });
+    console.log('Received payload:', { projectId, message, hierarchy });
 
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
-
-    // Ensure nodeReferences is an array
-    const references = Array.isArray(nodeReferences) ? nodeReferences : [];
 
     // Step 1: Fetch the ontology for the project
     let ontology;
@@ -221,24 +219,21 @@ app.post('/chat', async (req, res) => {
       return res.status(500).send({ error: 'Failed to fetch project ontology.' });
     }
 
-// Step 2: Save user message to Firestore
-const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
-const userMessageRef = await chatCollectionRef.add({
-  messageType: 'user',
-  content: message,
-  timestamp: new Date().toISOString(),
-  linkedNodes: references.map((node) => ({
-    id: node.id,
-    title: node.title,
-    description: node.description || 'No description available', // Ensure description is included
-  })),
-});
+    // Step 2: Save user message to Firestore
+    const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+
+    const userMessageRef = await chatCollectionRef.add({
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      hierarchy: hierarchy || null, // Save the full hierarchy
+    });
 
 
     // Step 3: Generate assistant response with emphasis on attached nodes (if any)
     let assistantResponse;
     try {
-      assistantResponse = await generateAssistantResponse(message, ontology, references);
+      assistantResponse = await generateAssistantResponse(message, ontology, hierarchy);
     } catch (error) {
       console.error('Error generating assistant response:', error);
       assistantResponse = {
@@ -284,11 +279,6 @@ const userMessageRef = await chatCollectionRef.add({
     res.status(500).send({ error: error.message });
   }
 });
-
-
-
-const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
-
 
 app.post('/testchat', async (req, res) => {
   try {
@@ -608,11 +598,11 @@ const fetchOntology = async (projectId) => {
   }
 };
 
-const generateAssistantResponse = async (message, ontology, nodeReferences) => {
+const generateAssistantResponse = async (message, ontology, hierarchy) => {
   try {
     let prompt;
 
-    if (nodeReferences && nodeReferences.length > 0) {
+    if (hierarchy) {
       // If nodes are attached, focus on the attached nodes
       prompt = `
         You are an assistant for an art project tool. 
@@ -624,7 +614,7 @@ const generateAssistantResponse = async (message, ontology, nodeReferences) => {
         "${message}"
 
         The user has attached the following nodes:
-        ${JSON.stringify(nodeReferences, null, 2)}
+        ${JSON.stringify(hierarchy, null, 2)}
 
         Your task is to:
         1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.

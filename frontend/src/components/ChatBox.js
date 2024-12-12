@@ -82,63 +82,26 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-  
+
     try {
-      setInput('');
       setLoading(true);
-  
+
       const payload = {
         projectId,
         message: input,
+        hierarchy: selectedHierarchy,
       };
-  
-      // Check if there is a selected hierarchy
-      if (selectedHierarchy) {
-        payload.nodeReferences = selectedHierarchy;
-        console.log('Sending to /explore-nodes with payload:', payload);
-  
-        const response = await axios.post('http://localhost:4000/explore-nodes', payload);
-        console.log('Response from /explore-nodes:', response);
-  
-        const { messageId } = response.data;
-  
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: messageId,
-            messageType: 'user',
-            content: input,
-            timestamp: new Date().toISOString(),
-            linkedHierarchy: selectedHierarchy, // Save attached nodes here
-          },
-        ]);
-      } else {
-        console.log('Sending to /chat with payload:', payload);
-  
-        const response = await axios.post('http://localhost:4000/chat', payload);
-        console.log('Response from /chat:', response);
-  
-        const { messageId } = response.data;
-  
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: messageId,
-            messageType: 'user',
-            content: input,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-      }
+
+      setInput('');
+      setSelectedHierarchy(null);
+
+      console.log('PL:', payload);
+
+      await axios.post('http://localhost:4000/chat', payload);
     } catch (error) {
-      console.error('Error while sending message:', error);
       setLoading(false);
-    } finally {
-      setLoading(false);
-      setSelectedHierarchy(null); // Clear selected nodes after sending
     }
   };
-  
 
   const sendTestMessage = async () => {
     if (!input.trim()) return;
