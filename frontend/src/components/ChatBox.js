@@ -167,7 +167,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   useImperativeHandle(ref, () => ({
     addHierarchy,
     generateImages,
-    toggleImageGeneration: () => setShowImageGeneration((prev) => !prev),
+    toggleImageGeneration: () => setShowImageGeneration(true),
   }));
 
   const toggleImageGeneration = () => {

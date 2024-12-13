@@ -170,6 +170,13 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     setActivePopup((prev) => (prev === node.id ? null : node.id));
   };
 
+  const handleGenerateImagesClick = (node, parent, grandparent) => {
+    const hierarchy = constructHierarchy(node, parent, grandparent);
+    onNodeClick(hierarchy); // Notify the parent about the node click
+    onGenerateImages(hierarchy)
+    setActivePopup((prev) => (prev === node.id ? null : node.id));
+  };
+
   const toggleCollapse = (id) => {
     setCollapsedItems((prev) => ({
       ...prev,
@@ -209,7 +216,10 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             </button>
             {activePopup === node.id && (
               <div ref={popupRef} className="explore-options-popup">
-                <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
+                <button
+                  className="explore-button"
+                  onClick={() => handleGenerateImagesClick(node, parent, grandparent)} // Trigger the image generation callback
+                >
                   Generate Images
                 </button>
                 <button className="explore-button">Get Suggestions</button>
@@ -236,9 +246,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
           </button>
           {activePopup === category.id && (
             <div ref={popupRef} className="explore-options-popup">
-              <button className="explore-button" onClick={() => handleExploreClick(category, null, null)}>
-                Generate Images
-              </button>
+              <button
+                  className="explore-button"
+                  onClick={() => handleGenerateImagesClick(category, null, null)} // Trigger the image generation callback
+                >
+                  Generate Images
+                </button>
               <button className="explore-button">Get Suggestions</button>
             </div>
           )}

@@ -27,6 +27,8 @@ const ProjectDetailsPage = () => {
   };
 
   const handleGenerateImages = (node) => {
+    console.log('Node: ', node)
+    setSelectedHierarchy(node);
     setSelectedNodeForImageGeneration(node); // Set the node for image generation
   };
 
