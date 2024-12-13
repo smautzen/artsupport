@@ -601,7 +601,97 @@ app.post('/likeImage', async (req, res) => {
   }
 });
 
+app.post('/likeEntity', async (req, res) => {
+  try {
+    const { projectId, messageId, suggestionIndex } = req.body;
 
+    console.log('Received /likeEntity request:', req.body);
+
+    if (!projectId || !messageId || suggestionIndex === undefined) {
+      console.error('Missing required fields:', { projectId, messageId, suggestionIndex });
+      return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
+    }
+
+    const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
+    const messageDoc = await messageRef.get();
+
+    if (!messageDoc.exists) {
+      console.error(`Message not found: Project ID: ${projectId}, Message ID: ${messageId}`);
+      return res.status(404).send({ error: 'Message not found.' });
+    }
+
+    const messageData = messageDoc.data();
+    const suggestion = messageData.suggestions[suggestionIndex];
+
+    console.log('Fetched suggestion:', suggestion);
+
+    if (!suggestion) {
+      console.error('Invalid entity suggestion:', suggestion);
+      return res.status(400).send({ error: 'Invalid entity suggestion.' });
+    }
+
+    // Fetch the hierarchy from the destination field in messageData
+    const destination = messageData.destination?.hierarchy;
+
+    if (!destination || !destination.space || !destination.category) {
+      console.error('Invalid or missing hierarchy in destination:', destination);
+      return res.status(400).send({ error: 'Invalid or missing hierarchy in destination.' });
+    }
+
+    const { space, category, node } = destination;
+    const categoryId = category.id;
+    const nodeId = node ? node.id : null;
+
+    console.log('Constructed destination:', { space, categoryId, nodeId });
+
+    const destinationRef = db.collection('projects').doc(projectId).collection(space).doc(categoryId);
+
+    if (nodeId) {
+      const nodeRef = destinationRef.collection('nodes').doc(nodeId);
+      const nodeDoc = await nodeRef.get();
+
+      if (!nodeDoc.exists) {
+        console.error('Destination node not found:', { space, categoryId, nodeId });
+        return res.status(404).send({ error: 'Destination node not found.' });
+      }
+
+      console.log('Adding entity to the entities array of the specified node...');
+      await nodeRef.set(
+        {
+          entities: admin.firestore.FieldValue.arrayUnion({
+            title: suggestion.title,
+            description: suggestion.description,
+          }),
+        },
+        { merge: true }
+      );
+    } else {
+      const destinationDoc = await destinationRef.get();
+
+      if (!destinationDoc.exists) {
+        console.error('Destination category not found:', { space, categoryId });
+        return res.status(404).send({ error: 'Destination category not found.' });
+      }
+
+      console.log('Adding entity to the entities array of the category...');
+      await destinationRef.set(
+        {
+          entities: admin.firestore.FieldValue.arrayUnion({
+            title: suggestion.title,
+            description: suggestion.description,
+          }),
+        },
+        { merge: true }
+      );
+    }
+
+    console.log('Successfully saved entity to the specified destination.');
+    res.status(201).send({ success: true });
+  } catch (error) {
+    console.error('Error in /likeEntity:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
 
 
 const fetchOntology = async (projectId) => {

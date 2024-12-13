@@ -52,28 +52,30 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       let endpoint;
       let requestBody;
 
-      if (suggestion.url) {
-        endpoint = 'http://localhost:4000/likeImage';
-        requestBody = {
-          projectId,
-          messageId,
-          suggestionIndex: index,
-          title: suggestion.title || 'Unnamed Image',
-          description: suggestion.description || 'No description provided',
-          url: suggestion.url,
-        };
-      } else if (suggestion.entitySuggestions) {
-        endpoint = 'http://localhost:4000/likeEntity';
-        requestBody = {
-          projectId,
-          messageId,
-          suggestionIndex: index,
-          entitySuggestions: suggestion.entitySuggestions,
-        };
-      } else {
-        endpoint = 'http://localhost:4000/likeSuggestion';
-        requestBody = nodeId
-          ? {
+      switch (action) {
+        case 'images':
+          endpoint = 'http://localhost:4000/likeImage';
+          requestBody = {
+            projectId,
+            messageId,
+            suggestionIndex: index,
+            title: suggestion.title || 'Unnamed Image',
+            description: suggestion.description || 'No description provided',
+            url: suggestion.url,
+          };
+          break;
+        case 'entities':
+          endpoint = 'http://localhost:4000/likeEntity';
+          requestBody = {
+            projectId,
+            messageId,
+            suggestionIndex: index,
+          };
+          break;
+        default:
+          endpoint = 'http://localhost:4000/likeSuggestion';
+          requestBody = nodeId
+            ? {
               projectId,
               messageId,
               suggestionIndex: index,
@@ -85,7 +87,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
               categoryTitle: suggestion.title,
               categoryDescription: suggestion.description || '',
             }
-          : {
+            : {
               projectId,
               messageId,
               suggestionIndex: index,
@@ -97,6 +99,8 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       }
 
       await axios.post(endpoint, requestBody);
+
+console.log('PL:',requestBody);
 
       setTimeout(() => {
         setAnimations((prevAnimations) =>
@@ -150,6 +154,8 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
                 <EntitySuggestions
                   key={`suggestion-${index}`}
                   item={item}
+                  index={index}
+                  handleLike={handleLike}
                 />
               );
             default:
