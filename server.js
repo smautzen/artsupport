@@ -301,7 +301,7 @@ app.post('/testchat', async (req, res) => {
       console.log('Hierarchy:', hierarchy);
 
       const destination = { hierarchy };
-      const entitySuggestions = [
+      const suggestions = [
         { title: 'Entity suggestion 1', description: 'sample description', liked: false },
         { title: 'Entity suggestion 2', description: 'sample description', liked: false },
         { title: 'Entity suggestion 3', description: 'sample description', liked: false },
@@ -312,10 +312,11 @@ app.post('/testchat', async (req, res) => {
         content: 'Suggestions for entities for node:',
         timestamp: new Date().toISOString(),
         destination,
-        entitySuggestions,
+        suggestions,
+        action: 'entities',
       });
 
-      res.status(201).send({ messageId: userMessageRef.id, destination, entitySuggestions });
+      res.status(201).send({ messageId: userMessageRef.id, destination, suggestions});
     } else {
       const systemResponse = `Responding to: "${message}"`;
 
@@ -369,6 +370,7 @@ app.post('/testchat', async (req, res) => {
         content: systemResponse,
         timestamp: new Date().toISOString(),
         suggestions,
+        action: 'nodes',
       });
 
       res.status(201).send({ messageId: userMessageRef.id, suggestions });
@@ -843,6 +845,7 @@ app.post('/generate-image', async (req, res) => {
       content: `Here are the generated images based on your prompt: "${prompt}"`,
       messageType: 'system',
       timestamp: new Date().toISOString(),
+      action: 'images',
       suggestions: imageUrls.map((image, index) => {
         const destination = attachedHierarchy
           ? {

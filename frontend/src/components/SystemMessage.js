@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './SystemMessage.css';
+import ImageSuggestions from './ImageSuggestions';
+import NodeSuggestions from './NodeSuggestions';
+import EntitySuggestions from './EntitySuggestions';
 
-const SystemMessage = ({ payload, projectId, messageId }) => {
+const SystemMessage = ({ action, payload, projectId, messageId }) => {
   const [likedSuggestions, setLikedSuggestions] = useState({});
   const [animations, setAnimations] = useState([]); // Track multiple active animations
   const [overlayImage, setOverlayImage] = useState(null); // Track the image for the overlay
@@ -28,25 +31,11 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
     try {
       const suggestion = payload[index];
       if (!suggestion) return;
-  
-      console.log('Selected suggestion:', suggestion); // Log the selected suggestion
-  
-      const rect = event.target.getBoundingClientRect(); // Get button position
-      const targetSpace = suggestion.space === 'material' ? 'left' : 'right'; // Determine direction
-      const animationId = Date.now(); // Unique ID for this animation
-  
-      // Log animation details
-      console.log('Animation details:', {
-        animationId,
-        title: nodeId
-          ? suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node'
-          : suggestion.title || 'Unnamed Suggestion',
-        targetSpace,
-        startX: rect.left + rect.width / 2,
-        startY: rect.top + rect.height / 2,
-      });
-  
-      // Add to animations array
+
+      const rect = event.target.getBoundingClientRect();
+      const targetSpace = suggestion.space === 'material' ? 'left' : 'right';
+      const animationId = Date.now();
+
       setAnimations((prevAnimations) => [
         ...prevAnimations,
         {
@@ -59,12 +48,11 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
           startY: rect.top + rect.height / 2,
         },
       ]);
-  
+
       let endpoint;
       let requestBody;
-  
+
       if (suggestion.url) {
-        // Handle image "likes"
         endpoint = 'http://localhost:4000/likeImage';
         requestBody = {
           projectId,
@@ -74,8 +62,15 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
           description: suggestion.description || 'No description provided',
           url: suggestion.url,
         };
+      } else if (suggestion.entitySuggestions) {
+        endpoint = 'http://localhost:4000/likeEntity';
+        requestBody = {
+          projectId,
+          messageId,
+          suggestionIndex: index,
+          entitySuggestions: suggestion.entitySuggestions,
+        };
       } else {
-        // Handle non-image "likes"
         endpoint = 'http://localhost:4000/likeSuggestion';
         requestBody = nodeId
           ? {
@@ -100,27 +95,18 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
               description: suggestion.description || '',
             };
       }
-  
-      // Log the request body being sent to the backend
-      console.log('Request body being sent:', requestBody);
-  
-      // Update Firestore via API call
-      const response = await axios.post(endpoint, requestBody);
-  
-      // Log the response from the backend
-      console.log('Response from server:', response);
-  
-      // Remove animation after 1 second
+
+      await axios.post(endpoint, requestBody);
+
       setTimeout(() => {
         setAnimations((prevAnimations) =>
           prevAnimations.filter((anim) => anim.id !== animationId)
         );
-      }, 1000); // Match animation duration
+      }, 1000);
     } catch (error) {
       console.error('Error liking suggestion:', error);
     }
   };
-  
 
   const openOverlay = (imageUrl) => {
     setOverlayImage(imageUrl);
@@ -146,73 +132,42 @@ const SystemMessage = ({ payload, projectId, messageId }) => {
         </div>
       ))}
       {Array.isArray(payload) && payload.length > 0 ? (
-        payload.map((item, index) => (
-          <div
-            key={`suggestion-${index}`}
-            className={`suggestion ${item.url && likedSuggestions[index]?.liked ? 'liked-suggestion' : ''}`}
-          >
-            <div className="timestamp">
-              {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Timestamp not available'}
-            </div>
-            {item.url ? (
-              // Image suggestion with overlayed Like button
-              <div className="image-container">
-                <button
-                  className={`like-button ${likedSuggestions[index]?.liked ? 'liked' : ''}`}
-                  onClick={(event) => handleLike(index, null, event)}
-                  disabled={likedSuggestions[index]?.liked}
-                >
-                  {likedSuggestions[index]?.liked ? 'Liked' : 'Like'}
-                </button>
-                <img
-                  src={item.url}
-                  alt={item.title || 'Generated Image'}
-                  className="suggestion-image"
-                  onClick={() => openOverlay(item.url)}
+        payload.map((item, index) => {
+          switch (action) {
+            case 'images':
+              return (
+                <ImageSuggestions
+                  key={`suggestion-${index}`}
+                  item={item}
+                  index={index}
+                  likedSuggestions={likedSuggestions}
+                  handleLike={handleLike}
+                  openOverlay={openOverlay}
                 />
-                <div className="image-title">
-                  <strong>{item.title || 'Unnamed Suggestion'}</strong>
-                </div>
-              </div>
-            ) : (
-              // Text suggestion with original behavior
-              <>
-                <button
-                  className={`highlight-button ${likedSuggestions[index]?.liked ? 'liked' : ''}`}
-                  onClick={(event) => handleLike(index, null, event)}
-                  disabled={likedSuggestions[index]?.liked}
-                >
-                  {item.title || 'Unnamed Suggestion'}
-                </button>
-                <div className="item-description">
-                  {item.description || 'No description available'}
-                </div>
-              </>
-            )}
-            <ul>
-              {item.nodes &&
-                item.nodes.map((node) => (
-                  <li key={`node-${node.id}`}>
-                    <button
-                      className={`highlight-button ${
-                        likedSuggestions[index]?.nodes?.[node.id] ? 'liked' : ''
-                      }`}
-                      onClick={(event) => handleLike(index, node.id, event)}
-                      disabled={likedSuggestions[index]?.nodes?.[node.id]}
-                    >
-                      {node.title || 'Unnamed Node'}
-                    </button>{' '}
-                    - {node.description || 'No description'} ({node.type})
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ))
+              );
+            case 'entities':
+              return (
+                <EntitySuggestions
+                  key={`suggestion-${index}`}
+                  item={item}
+                />
+              );
+            default:
+              return (
+                <NodeSuggestions
+                  key={`suggestion-${index}`}
+                  item={item}
+                  index={index}
+                  likedSuggestions={likedSuggestions}
+                  handleLike={handleLike}
+                />
+              );
+          }
+        })
       ) : (
         <p>No suggestions available.</p>
       )}
 
-      {/* Overlay */}
       {overlayImage && (
         <div className="overlay" onClick={closeOverlay}>
           <div className="overlay-content" onClick={(e) => e.stopPropagation()}>

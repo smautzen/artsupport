@@ -132,7 +132,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     console.log('Prompt:', prompt);
     console.log('Number of Images:', n);
     console.log('Attached Hierarchy:', selectedHierarchy);
-  
+
     try {
       const payload = {
         projectId,
@@ -143,9 +143,9 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
       removeHierarchy();
       toggleImageGeneration();
-  
+
       console.log('Final payload being sent to server:', payload);
-  
+
       const response = await axios.post('http://localhost:4000/generate-image', payload);
       console.log('Response from server:', response);
     } catch (error) {
@@ -216,8 +216,9 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
                   </div>
                 )}
                 <div className="system-response-text">{msg.content}</div>
-                {msg.suggestions?.length > 0 && (
+                {msg.action && (
                   <SystemMessage
+                    action={msg.action}
                     payload={msg.suggestions}
                     projectId={projectId}
                     messageId={msg.id}
@@ -239,7 +240,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
       <div className="action-div">
         <div className="side-by-side">
-            <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
+          <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
           {showImageGeneration && (
             <div className="image-generation-wrapper">
               <button className="close-btn" onClick={toggleImageGeneration}>
