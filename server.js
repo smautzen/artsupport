@@ -490,9 +490,7 @@ app.post('/likeImage', async (req, res) => {
 
     suggestion.liked = true;
 
-    // If a destination was not provided, we save in default image location
     if (suggestion.destination.space === null) {
-      // Save the liked image to the conceptual/images collection
       const imagesCollectionRef = db.collection('projects').doc(projectId).collection('conceptual');
       const imagesCategorySnapshot = await imagesCollectionRef.where('title', '==', 'Images').get();
 
@@ -521,21 +519,16 @@ app.post('/likeImage', async (req, res) => {
         }),
       });
 
-      // Update Firestore with the updated suggestions
       console.log('Updating suggestions in Firestore...');
       await messageRef.update({ suggestions: messageData.suggestions });
 
       console.log('Successfully processed /likeImage request.');
       res.status(201).send({ success: true });
     } else {
-      // If a destination was provided, we save it at the appropriate place
-      if (suggestion.destination.space && suggestion.destination.categoryId) {
-        const destinationRef = db
-          .collection('projects')
-          .doc(projectId)
-          .collection(suggestion.destination.space)
-          .doc(suggestion.destination.categoryId);
+      const { space, categoryId, nodeId } = suggestion.destination;
 
+      if (space && categoryId) {
+        const destinationRef = db.collection('projects').doc(projectId).collection(space).doc(categoryId);
         const destinationDoc = await destinationRef.get();
 
         if (!destinationDoc.exists) {
@@ -543,9 +536,8 @@ app.post('/likeImage', async (req, res) => {
           return res.status(404).send({ error: 'Destination category not found.' });
         }
 
-        if (suggestion.destination.nodeId) {
-          // Save inside the specified node
-          const nodeRef = destinationRef.collection('nodes').doc(suggestion.destination.nodeId);
+        if (nodeId) {
+          const nodeRef = destinationRef.collection('nodes').doc(nodeId);
           const nodeDoc = await nodeRef.get();
 
           if (!nodeDoc.exists) {
@@ -562,11 +554,16 @@ app.post('/likeImage', async (req, res) => {
             }),
           });
         } else {
-          console.error('Node ID not provided in destination details:', suggestion.destination);
-          return res.status(400).send({ error: 'Node ID not provided in destination details.' });
+          console.log('Adding image to the images array of the category...');
+          await destinationRef.update({
+            images: admin.firestore.FieldValue.arrayUnion({
+              title: suggestion.title,
+              description: suggestion.description,
+              url: suggestion.url,
+            }),
+          });
         }
 
-        // Update Firestore with the updated suggestions
         console.log('Updating suggestions in Firestore...');
         await messageRef.update({ suggestions: messageData.suggestions });
 
@@ -582,6 +579,7 @@ app.post('/likeImage', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 
 

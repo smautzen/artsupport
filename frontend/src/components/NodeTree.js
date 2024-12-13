@@ -78,11 +78,11 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
                     prevTree.map((prevCategory) =>
                       prevCategory.id === category.id
                         ? {
-                            ...prevCategory,
-                            nodes: prevCategory.nodes.map((prevNode) =>
-                              prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
-                            ),
-                          }
+                          ...prevCategory,
+                          nodes: prevCategory.nodes.map((prevNode) =>
+                            prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
+                          ),
+                        }
                         : prevCategory
                     )
                   );
@@ -246,6 +246,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
         {!collapsedItems[category.id] && (
           <div className="category-children">
             <div>{category.description}</div>
+            <ImageNodeComponent node={category} />
             {renderNodes(category.nodes, category, null)}
           </div>
         )}

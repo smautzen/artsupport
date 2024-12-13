@@ -152,8 +152,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       console.error('Error generating images:', error);
     }
   };
-  
-  
 
   const addHierarchy = (hierarchy) => {
     setSelectedHierarchy(hierarchy);
