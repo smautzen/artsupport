@@ -1,0 +1,55 @@
+.entity-suggestion {
+    all: unset;
+    display: block;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: #fefefe;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .entity-title {
+    all: unset;
+    font-size: 16px;
+    color: #333;
+    display: block;
+    font-weight: bold;
+  }
+  
+  .entity-description {
+    all: unset;
+    font-size: 14px;
+    color: #555;
+    display: block;
+    margin: 10px 0;
+  }
+  
+  .like-button {
+    all: unset;
+    display: inline-block;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: blue;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    text-align: center;
+  }
+  
+  .like-button:hover {
+    background-color: darkblue;
+    transform: scale(1.05);
+  }
+  
+  .like-button:disabled {
+    background-color: green;
+    cursor: not-allowed;
+  }
+  
+  .like-button.liked {
+    background-color: green;
+  }
+  

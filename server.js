@@ -630,6 +630,12 @@ app.post('/likeEntity', async (req, res) => {
       return res.status(400).send({ error: 'Invalid entity suggestion.' });
     }
 
+    // Set the 'liked' attribute for the suggestion to true
+    messageData.suggestions[suggestionIndex].liked = true;
+    await messageRef.update({ suggestions: messageData.suggestions });
+
+    console.log('Updated suggestion with liked attribute:', messageData.suggestions[suggestionIndex]);
+
     // Fetch the hierarchy from the destination field in messageData
     const destination = messageData.destination?.hierarchy;
 
@@ -692,6 +698,7 @@ app.post('/likeEntity', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 
 const fetchOntology = async (projectId) => {
