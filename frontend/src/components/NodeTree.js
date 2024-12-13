@@ -6,6 +6,7 @@ import './NodeTree.css';
 import TextNodeComponent from './nodecomponents/TextNodeComponent';
 import ImageNodeComponent from './nodecomponents/ImageNodeComponent';
 import PaletteNodeComponent from './nodecomponents/PaletteNodeComponent';
+import NodeEntitiesComponent from './nodecomponents/NodeEntitiesComponent';
 
 import categoryIcon from '../assets/category.png';
 import textNodeIcon from '../assets/textnode.png';
@@ -260,6 +261,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
           <div className="category-children">
             <div>{category.description}</div>
             <ImageNodeComponent node={category} />
+            <NodeEntitiesComponent entities={category.entities} />
             {renderNodes(category.nodes, category, null)}
           </div>
         )}
