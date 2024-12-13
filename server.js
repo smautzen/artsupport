@@ -297,68 +297,87 @@ app.post('/testchat', async (req, res) => {
       hierarchy: hierarchy || null, // Save the full hierarchy
     });
 
-    const systemResponse = `Responding to: "${message}"`;
+    if (hierarchy) {
+      console.log('Hierarchy:', hierarchy);
 
-    const suggestions = [
-      {
-        id: uuidv4(),
-        space: 'material',
-        type: 'category',
-        title: 'Brush Styles',
-        description: 'Explore different brush techniques',
-        nodes: [
-          {
-            id: uuidv4(),
-            type: 'text',
-            title: 'Watercolor Brushes',
-            description: 'Brushes designed for soft, flowing effects',
-          },
-          {
-            id: uuidv4(),
-            type: 'text',
-            title: 'Oil Brushes',
-            description: 'Thick, textured strokes for oil-like effects',
-          },
-        ],
-      },
-      {
-        id: uuidv4(),
-        space: 'conceptual',
-        type: 'category',
-        title: 'Mood Inspiration',
-        description: 'Concepts for evoking specific emotions',
-        nodes: [
-          {
-            id: uuidv4(),
-            type: 'text',
-            title: 'Serenity',
-            description: 'Ideas for creating a peaceful atmosphere',
-          },
-          {
-            id: uuidv4(),
-            type: 'text',
-            title: 'Tension',
-            description: 'Techniques to depict dramatic or intense moments',
-          },
-        ],
-      },
-    ];
+      const destination = { hierarchy };
+      const entitySuggestions = [
+        { title: 'Entity suggestion 1', description: 'sample description', liked: false },
+        { title: 'Entity suggestion 2', description: 'sample description', liked: false },
+        { title: 'Entity suggestion 3', description: 'sample description', liked: false },
+      ];
 
-    await chatCollectionRef.add({
-      messageType: 'system',
-      content: systemResponse,
-      timestamp: new Date().toISOString(),
-      suggestions,
-    });
+      await chatCollectionRef.add({
+        messageType: 'system',
+        content: 'Suggestions for entities for node:',
+        timestamp: new Date().toISOString(),
+        destination,
+        entitySuggestions,
+      });
 
-    res.status(201).send({ messageId: userMessageRef.id, suggestions });
+      res.status(201).send({ messageId: userMessageRef.id, destination, entitySuggestions });
+    } else {
+      const systemResponse = `Responding to: "${message}"`;
+
+      const suggestions = [
+        {
+          id: uuidv4(),
+          space: 'material',
+          type: 'category',
+          title: 'Brush Styles',
+          description: 'Explore different brush techniques',
+          nodes: [
+            {
+              id: uuidv4(),
+              type: 'text',
+              title: 'Watercolor Brushes',
+              description: 'Brushes designed for soft, flowing effects',
+            },
+            {
+              id: uuidv4(),
+              type: 'text',
+              title: 'Oil Brushes',
+              description: 'Thick, textured strokes for oil-like effects',
+            },
+          ],
+        },
+        {
+          id: uuidv4(),
+          space: 'conceptual',
+          type: 'category',
+          title: 'Mood Inspiration',
+          description: 'Concepts for evoking specific emotions',
+          nodes: [
+            {
+              id: uuidv4(),
+              type: 'text',
+              title: 'Serenity',
+              description: 'Ideas for creating a peaceful atmosphere',
+            },
+            {
+              id: uuidv4(),
+              type: 'text',
+              title: 'Tension',
+              description: 'Techniques to depict dramatic or intense moments',
+            },
+          ],
+        },
+      ];
+
+      await chatCollectionRef.add({
+        messageType: 'system',
+        content: systemResponse,
+        timestamp: new Date().toISOString(),
+        suggestions,
+      });
+
+      res.status(201).send({ messageId: userMessageRef.id, suggestions });
+    }
   } catch (error) {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
 });
-
-
 
 app.get('/test-openai', async (req, res) => {
   try {
