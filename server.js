@@ -297,33 +297,70 @@ app.post('/testchat', async (req, res) => {
       hierarchy: hierarchy || null, // Save the full hierarchy
     });
 
+    // If a certain category/node is being explored
     if (hierarchy) {
       console.log('Hierarchy:', hierarchy);
 
-      const destination = { hierarchy };
-      const suggestions = [
-        { title: 'Entity suggestion 1', description: 'sample description', liked: false },
-        { title: 'Entity suggestion 2', description: 'sample description', liked: false },
-        { title: 'Entity suggestion 3', description: 'sample description', liked: false },
-      ];
+      // If it's a node, provide entity suggestions
+      if (hierarchy.node && hierarchy.category) {
+        const destination = { hierarchy };
 
-      await chatCollectionRef.add({
-        messageType: 'system',
-        content: 'Suggestions for entities for node:',
-        timestamp: new Date().toISOString(),
-        destination,
-        suggestions,
-        action: 'entities',
-      });
+        entity1Id = uuidv4();
+        entity2Id = uuidv4();
+        entity3Id = uuidv4();
 
-      res.status(201).send({ messageId: userMessageRef.id, destination, suggestions});
+        const suggestions = [
+          { title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, id: entity1Id, messageId: userMessageRef.id },
+          { title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, id: entity2Id, messageId: userMessageRef.id },
+          { title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, id: entity3Id, messageId: userMessageRef.id },
+        ];
+
+        // Update the node's entities field
+        const spaceCollectionRef = db.collection('projects').doc(projectId).collection(hierarchy.space);
+        const nodeRef = spaceCollectionRef.doc(hierarchy.category.id).collection('nodes').doc(hierarchy.node.id);
+        const nodeDoc = await nodeRef.get();
+
+        if (!nodeDoc.exists) {
+          return res.status(404).send({ error: 'Node not found.' });
+        }
+
+        // Merge new entities into the node's existing entities field
+        await nodeRef.set(
+          {
+            entities: admin.firestore.FieldValue.arrayUnion(...suggestions),
+          },
+          { merge: true }
+        );
+
+        // Add system message with suggestions
+        await chatCollectionRef.add({
+          messageType: 'system',
+          content: 'Suggestions for entities for node:',
+          timestamp: new Date().toISOString(),
+          destination,
+          suggestions,
+          action: 'entities',
+        });
+
+        return res.status(201).send({ messageId: userMessageRef.id, destination, suggestions });
+      }
+
+      // If it's a category, provide node suggestions (to be implemented)
+      if (hierarchy.node === null && hierarchy.category) {
+        // TODO: Implement node suggestions
+      }
     } else {
+      // If no hierarchy is provided, return suggestions for categories with nodes
       const systemResponse = `Responding to: "${message}"`;
 
+      entity1Id = uuidv4();
+      entity2Id = uuidv4();
+      entity3Id = uuidv4();
+
       const entities = [
-        { title: 'Entity suggestion 1', description: 'sample description', liked: false },
-        { title: 'Entity suggestion 2', description: 'sample description', liked: false },
-        { title: 'Entity suggestion 3', description: 'sample description', liked: false },
+        { title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, id: entity1Id, messageId: userMessageRef.id },
+        { title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, id: entity2Id, messageId: userMessageRef.id },
+        { title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, id: entity3Id, messageId: userMessageRef.id },
       ];
 
       const suggestions = [
@@ -383,13 +420,14 @@ app.post('/testchat', async (req, res) => {
         action: 'nodes',
       });
 
-      res.status(201).send({ messageId: userMessageRef.id, suggestions });
+      return res.status(201).send({ messageId: userMessageRef.id, suggestions });
     }
   } catch (error) {
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
 });
+
 
 app.get('/test-openai', async (req, res) => {
   try {
