@@ -81,14 +81,14 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       const rect = event.target.getBoundingClientRect();
       const animationId = Date.now();
       const animationTitle = await getAnimationTitle(index, id, action);
-  
+
       const targetSpace =
-      action === 'node'
+        action === 'node'
           ? payload[index]?.space === 'material'
             ? 'left'
             : 'right'
           : 'center'; // Default for non-node types
-  
+
       setAnimations((prevAnimations) => [
         ...prevAnimations,
         {
@@ -99,7 +99,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
           startY: rect.top + rect.height / 2,
         },
       ]);
-  
+
       switch (action) {
         case 'nodes':
           await handleNodeLike(index, id);
@@ -113,7 +113,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         default:
           console.error('Unknown action type:', action);
       }
-  
+
       setTimeout(() => {
         setAnimations((prevAnimations) =>
           prevAnimations.filter((anim) => anim.id !== animationId)
@@ -127,31 +127,31 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
   const handleNodeLike = async (index, nodeId) => {
     const suggestion = payload[index];
     if (!suggestion) return;
-  
+
     const endpoint = 'http://localhost:4000/likeSuggestion';
     const requestBody = nodeId
       ? {
-          projectId,
-          messageId,
-          suggestionIndex: index,
-          type: 'node',
-          nodeId,
-          categoryId: suggestion.id,
-          title: suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node',
-          description: suggestion.nodes.find((n) => n.id === nodeId)?.description || '',
-          categoryTitle: suggestion.title,
-          categoryDescription: suggestion.description || '',
-        }
+        projectId,
+        messageId,
+        suggestionIndex: index,
+        type: 'node',
+        nodeId,
+        categoryId: suggestion.id,
+        title: suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node',
+        description: suggestion.nodes.find((n) => n.id === nodeId)?.description || '',
+        categoryTitle: suggestion.title,
+        categoryDescription: suggestion.description || '',
+      }
       : {
-          projectId,
-          messageId,
-          suggestionIndex: index,
-          type: 'category',
-          categoryId: suggestion.id,
-          title: suggestion.title,
-          description: suggestion.description || '',
-        };
-  
+        projectId,
+        messageId,
+        suggestionIndex: index,
+        type: 'category',
+        categoryId: suggestion.id,
+        title: suggestion.title,
+        description: suggestion.description || '',
+      };
+
     await axios.post(endpoint, requestBody);
     console.log('Node like request body:', requestBody);
   };
@@ -159,7 +159,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
   const handleImageLike = async (index) => {
     const suggestion = payload[index];
     if (!suggestion) return;
-  
+
     const endpoint = 'http://localhost:4000/likeImage';
     const requestBody = {
       projectId,
@@ -169,7 +169,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       description: suggestion.description || 'No description provided',
       url: suggestion.url,
     };
-  
+
     await axios.post(endpoint, requestBody);
     console.log('Image like request body:', requestBody);
   };
@@ -181,22 +181,22 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       messageId,
       entityId,
     };
-  
+
     await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
     });
-  
+
     console.log('Entity like request body:', requestBody);
-  
+
     // Update local liked state for entities
     setEntities((prevEntities) =>
       prevEntities.map((entity) =>
         entity.id === entityId ? { ...entity, liked: true } : entity
       )
     );
-  }; 
+  };
 
   const getAnimationTitle = async (index, id, actionType) => {
     switch (actionType) {
@@ -218,8 +218,8 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         return 'Unnamed Animation';
     }
   };
-  
-  
+
+
   // Open image overlay
   const openOverlay = (imageUrl) => {
     setOverlayImage(imageUrl);
@@ -261,13 +261,13 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         suggestions.map((item, index) => (
           <NodeSuggestions
             key={`node-${index}`}
-            item={item}
+            item={item} // Pass the entire item object
             index={index}
-            likedSuggestions={likedSuggestions}
             handleLike={handleLike}
           />
         ))
       )}
+
 
       {action === 'entities' && entities.length > 0 && (
         entities.map((entity, index) => (
@@ -281,7 +281,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       )}
 
       {(action !== 'entities' && action !== 'images' && action !== 'nodes') ||
-      (entities.length === 0 && suggestions.length === 0) ? (
+        (entities.length === 0 && suggestions.length === 0) ? (
         <p>No suggestions available.</p>
       ) : null}
 

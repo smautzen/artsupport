@@ -457,39 +457,59 @@ app.get('/test-openai', async (req, res) => {
 
 app.post('/likeSuggestion', async (req, res) => {
   try {
-    const { projectId, messageId, suggestionIndex, type, title, description, categoryTitle, categoryDescription } = req.body;
+    const {
+      projectId,
+      messageId,
+      suggestionIndex,
+      type,
+      title,
+      description,
+      categoryTitle,
+      categoryDescription,
+    } = req.body;
 
+    console.log('body: ', req.body); // Log the request body for debugging
+
+    // Validate input
     if (!projectId || !messageId || suggestionIndex === undefined) {
-      return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
+      return res
+        .status(400)
+        .send({ error: 'Project ID, message ID, and suggestion index are required.' });
     }
 
+    // Get the message document from Firestore
     const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
     const messageDoc = await messageRef.get();
+
     if (!messageDoc.exists) {
       return res.status(404).send({ error: 'Message not found.' });
     }
 
     const messageData = messageDoc.data();
-    const suggestion = messageData.suggestions[suggestionIndex];
+    console.log('Suggestions: ', messageData.suggestions);
 
+    const suggestion = messageData.suggestions[suggestionIndex];
     if (!suggestion) {
       return res.status(400).send({ error: 'Invalid suggestion index.' });
     }
 
-    console.log('1');
-
-    // Update liked status
+    // Handle liking a category
     if (type === 'category') {
-      suggestion.liked = true;
-    } else if (type === 'node') {
+      suggestion.liked = true; // Mark the category suggestion as liked
+    }
+    // Handle liking a node
+    else if (type === 'node') {
       const node = suggestion.nodes.find((n) => n.title === title);
       if (node) {
-        node.liked = true;
+        node.liked = true; // Mark the node as liked
 
-        // Include entities in the node
+        // Also mark the parent category (suggestion) as liked
+        suggestion.liked = true;
+
+        // Include entities associated with the node (if any)
         const entities = node.entities || [];
 
-        // Process Firestore updates
+        // Process Firestore updates for material or conceptual space
         const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
 
         const categorySnapshot = await spaceCollectionRef.where('title', '==', categoryTitle).get();
@@ -500,6 +520,7 @@ app.post('/likeSuggestion', async (req, res) => {
             title: categoryTitle,
             description: categoryDescription || 'No description available',
             type: 'category',
+            liked: true,
             createdAt: new Date().toISOString(),
           });
 
@@ -508,7 +529,8 @@ app.post('/likeSuggestion', async (req, res) => {
             title,
             description: description || 'No description provided',
             type: 'text',
-            entities, // Add entities array to the node
+            liked: true,
+            entities,
             createdAt: new Date().toISOString(),
           });
         } else {
@@ -519,27 +541,30 @@ app.post('/likeSuggestion', async (req, res) => {
             title,
             description: description || 'No description provided',
             type: 'text',
-            entities, // Add entities array to the node
+            liked: true,
+            entities,
             createdAt: new Date().toISOString(),
           });
         }
       }
     }
 
+    // Update the suggestions array in Firestore
     await messageRef.update({ suggestions: messageData.suggestions });
 
+    // Handle creating a new category if type is 'category'
     if (type === 'category') {
-      console.log('2');
       const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
+
       const categorySnapshot = await spaceCollectionRef.where('title', '==', title).get();
 
       if (categorySnapshot.empty) {
-        console.log('3');
         console.log('Creating category:', title);
         await spaceCollectionRef.add({
           title,
           description: description || 'No description available',
           type: 'category',
+          liked: true,
           createdAt: new Date().toISOString(),
         });
       }
@@ -551,6 +576,8 @@ app.post('/likeSuggestion', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
+
 
 
 app.post('/likeImage', async (req, res) => {
