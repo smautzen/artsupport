@@ -1,20 +1,41 @@
 .node-entities {
-    border: 1px solid black;
-    padding: 10px;
-    margin-top: 20px;
-  }
-  
-  .entity-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .entity-box {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
+  margin: 16px 0;
+}
+
+.entity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entity-box {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.entity-box.suggested {
+  font-style: italic;
+  color: #888; /* Lighter font for unliked entities */
+  background-color: #fff; /* Optional: make background stand out */
+  border: 1px dashed #ccc; /* Optional: add a dashed border for distinction */
+}
+
+.like-button {
+  margin-left: 8px;
+  padding: 4px 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.like-button:hover {
+  background-color: #0056b3;
+}

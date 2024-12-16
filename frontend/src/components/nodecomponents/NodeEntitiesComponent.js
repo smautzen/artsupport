@@ -10,6 +10,11 @@ const NodeEntitiesComponent = ({ entities }) => {
   const likedEntities = entities.filter(entity => entity.liked);
   const unlikedEntities = entities.filter(entity => !entity.liked);
 
+  // Handle like button click
+  const handleLikeClick = (entity) => {
+    console.log('Liked entity attributes:', entity);
+  };
+
   return (
     <div className="node-entities">
       {likedEntities.length > 0 && (
@@ -29,11 +34,14 @@ const NodeEntitiesComponent = ({ entities }) => {
           <strong><span>Suggested entities for node:</span></strong>
           <div className="entity-list">
             {unlikedEntities.map((entity, index) => (
-              <div
-                key={index}
-                className="entity-box suggested"
-              >
+              <div key={index} className="entity-box suggested">
                 <em>{entity.title}</em>
+                <button
+                  className="like-button"
+                  onClick={() => handleLikeClick(entity)}
+                >
+                  Like
+                </button>
               </div>
             ))}
           </div>
