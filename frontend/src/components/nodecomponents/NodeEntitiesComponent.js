@@ -1,7 +1,8 @@
 import React from 'react';
+import axios from 'axios';
 import './NodeEntitiesComponent.css';
 
-const NodeEntitiesComponent = ({ entities }) => {
+const NodeEntitiesComponent = ({ entities, projectId, space, categoryId, nodeId }) => {
   if (!entities || !Array.isArray(entities) || entities.length === 0) {
     return null; // Render nothing if there are no entities
   }
@@ -11,8 +12,24 @@ const NodeEntitiesComponent = ({ entities }) => {
   const unlikedEntities = entities.filter(entity => !entity.liked);
 
   // Handle like button click
-  const handleLikeClick = (entity) => {
-    console.log('Liked entity attributes:', entity);
+  const handleLikeClick = async (entityIndex) => {
+    try {
+      const response = await axios.post('http://localhost:4000/likeEntityFromSpace', {
+        projectId,
+        space,
+        categoryId,
+        nodeId,
+        entityIndex,
+      });
+
+      if (response.status === 200) {
+        console.log(`Entity at index ${entityIndex} liked successfully!`);
+      } else {
+        console.error('Failed to like entity:', response.data);
+      }
+    } catch (err) {
+      console.error('Error liking entity:', err.response?.data || err.message);
+    }
   };
 
   return (
@@ -38,7 +55,7 @@ const NodeEntitiesComponent = ({ entities }) => {
                 <em>{entity.title}</em>
                 <button
                   className="like-button"
-                  onClick={() => handleLikeClick(entity)}
+                  onClick={() => handleLikeClick(index + likedEntities.length)} // Adjust index for unliked entities
                 >
                   Like
                 </button>

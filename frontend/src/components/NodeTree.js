@@ -192,7 +192,14 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
       const renderNodeComponent = (node) => {
         switch (node.type) {
           case 'text':
-            return <TextNodeComponent node={node} />;
+            return (
+              <TextNodeComponent
+                node={node}
+                projectId={projectId}
+                space={space}
+                categoryId={parent?.id || grandparent?.id}
+              />
+            );
           case 'image':
             return <ImageNodeComponent node={node} />;
           case 'palette':
@@ -248,11 +255,11 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
           {activePopup === category.id && (
             <div ref={popupRef} className="explore-options-popup">
               <button
-                  className="explore-button"
-                  onClick={() => handleGenerateImagesClick(category, null, null)} // Trigger the image generation callback
-                >
-                  Generate Images
-                </button>
+                className="explore-button"
+                onClick={() => handleGenerateImagesClick(category, null, null)} // Trigger the image generation callback
+              >
+                Generate Images
+              </button>
               <button className="explore-button">Get Suggestions</button>
             </div>
           )}

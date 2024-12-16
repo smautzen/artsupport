@@ -720,6 +720,58 @@ app.post('/likeEntity', async (req, res) => {
   }
 });
 
+app.post('/likeEntityFromSpace', async (req, res) => {
+  try {
+    const { projectId, space, categoryId, nodeId, entityIndex } = req.body;
+
+    console.log('Received /likeEntityFromSpace request:', req.body);
+
+    // Validate required fields
+    if (!projectId || !space || !categoryId || !nodeId || entityIndex === undefined) {
+      console.error('Missing required fields:', { projectId, space, categoryId, nodeId, entityIndex });
+      return res.status(400).send({ error: 'Project ID, space, category ID, node ID, and entity index are required.' });
+    }
+
+    const nodeRef = db
+      .collection('projects')
+      .doc(projectId)
+      .collection(space)
+      .doc(categoryId)
+      .collection('nodes')
+      .doc(nodeId);
+
+    const nodeDoc = await nodeRef.get();
+
+    if (!nodeDoc.exists) {
+      console.error('Node not found:', { space, categoryId, nodeId });
+      return res.status(404).send({ error: 'Node not found.' });
+    }
+
+    const nodeData = nodeDoc.data();
+
+    if (!nodeData.entities || !Array.isArray(nodeData.entities) || entityIndex >= nodeData.entities.length) {
+      console.error('Invalid or missing entities array in node or entity index out of range:', {
+        entities: nodeData.entities,
+        entityIndex,
+      });
+      return res.status(400).send({ error: 'Invalid or missing entities array in node or entity index out of range.' });
+    }
+
+    // Update the 'liked' attribute for the specified entity
+    nodeData.entities[entityIndex].liked = true;
+
+    console.log('Updated entity to liked:', nodeData.entities[entityIndex]);
+
+    // Save the updated entities array back to Firestore
+    await nodeRef.update({ entities: nodeData.entities });
+
+    console.log('Successfully updated entity in node.');
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.error('Error in /likeEntityFromSpace:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
 
 
 const fetchOntology = async (projectId) => {
