@@ -1,28 +1,50 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/firebase-config';
 import './EntitySuggestions.css';
 
-const EntitySuggestions = ({ item, handleLike, projectId, index }) => {
-  const { id, title, description, liked } = item; // Destructure properties of the single entity
+const EntitySuggestions = ({ entityId, projectId, handleLike, index }) => {
+  const [entity, setEntity] = useState(null); // Store entity data
+
+  // Subscribe to the individual entity document
+  useEffect(() => {
+    if (!entityId) return;
+
+    const entityRef = doc(db, 'projects', projectId, 'entities', entityId);
+
+    const unsubscribe = onSnapshot(
+      entityRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setEntity({ id: entityId, ...snapshot.data() });
+        } else {
+          console.warn(`Entity with ID ${entityId} not found.`);
+        }
+      },
+      (error) => {
+        console.error('Error subscribing to entity:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [entityId, projectId]);
+
+  if (!entity) return <p>Loading entity...</p>;
 
   return (
     <div className="entity-suggestion">
-      {/* Render entity title */}
       <div className="entity-title" style={{ fontWeight: 'bold' }}>
-        {title || 'Untitled Entity'}
+        {entity.title || 'Untitled Entity'}
       </div>
-
-      {/* Render entity description */}
       <div className="entity-description" style={{ margin: '10px 0' }}>
-        {description || 'No description provided.'}
+        {entity.description || 'No description provided.'}
       </div>
-
-      {/* Render Like button */}
       <button
-        className={`like-button ${liked ? 'liked' : ''}`}
-        onClick={(event) => handleLike(index, id, event)} // Pass entity ID to handleLike
-        disabled={liked} // Disable if already liked
+        className={`like-button ${entity.liked ? 'liked' : ''}`}
+        onClick={(event) => handleLike(index, entity.id, event)}
+        disabled={entity.liked}
       >
-        {liked ? 'Liked' : 'Like'}
+        {entity.liked ? 'Liked' : 'Like'}
       </button>
     </div>
   );

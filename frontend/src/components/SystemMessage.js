@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/firebase-config';
 import './SystemMessage.css';
 import ImageSuggestions from './ImageSuggestions';
@@ -7,105 +7,59 @@ import NodeSuggestions from './NodeSuggestions';
 import EntitySuggestions from './EntitySuggestions';
 
 const SystemMessage = ({ action, payload, projectId, messageId }) => {
-  const [likedSuggestions, setLikedSuggestions] = useState({});
-  const [animations, setAnimations] = useState([]); // Track multiple active animations
-  const [overlayImage, setOverlayImage] = useState(null); // Track the image for the overlay
-  const [entities, setEntities] = useState([]); // Entities loaded from Firestore
+  const [entities, setEntities] = useState([]); // Store entity IDs from the message
+  const [animations, setAnimations] = useState([]); // Track animations
+  const [overlayImage, setOverlayImage] = useState(null); // Track overlay image
 
-  // Load entities from Firestore when the action is "entities"
+  // Subscribe to the Firestore message document
   useEffect(() => {
-    const fetchEntities = async () => {
-      if (action !== 'entities' || !payload || !Array.isArray(payload)) return;
+    if (action !== 'entities' || !messageId) return;
 
-      try {
-        const fetchedEntities = await Promise.all(
-          payload.map(async (item) => {
-            const entityRef = doc(db, 'projects', projectId, 'entities', item.id);
-            const entitySnapshot = await getDoc(entityRef);
-            if (entitySnapshot.exists()) {
-              return { id: item.id, messageId: item.messageId, ...entitySnapshot.data() };
-            } else {
-              console.warn(`Entity with ID ${item.id} not found.`);
-              return null;
-            }
-          })
-        );
+    const messageRef = doc(db, 'projects', projectId, 'chat', messageId);
 
-        setEntities(fetchedEntities.filter((entity) => entity !== null));
-      } catch (error) {
-        console.error('Error fetching entities:', error);
+    const unsubscribe = onSnapshot(
+      messageRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const messageData = snapshot.data();
+          if (messageData && messageData.suggestions && Array.isArray(messageData.suggestions)) {
+            // Extract entity IDs from the suggestions array
+            setEntities(messageData.suggestions.map((suggestion) => suggestion.id));
+          } else {
+            console.warn('No valid suggestions found in the message document.');
+          }
+        } else {
+          console.error(`Message with ID ${messageId} not found.`);
+        }
+      },
+      (error) => {
+        console.error('Error subscribing to the message document:', error);
       }
-    };
+    );
 
-    fetchEntities();
-  }, [payload, action, projectId]);
+    return () => unsubscribe();
+  }, [action, projectId, messageId]);
 
-  // Initialize liked suggestions for other actions (images, nodes)
-  useEffect(() => {
-    if (action !== 'entities' && payload && Array.isArray(payload)) {
-      const likedData = payload.reduce((acc, item, index) => {
-        const anyNodeLiked = (item.nodes || []).some((node) => node.liked);
-        acc[index] = {
-          liked: item.liked || anyNodeLiked,
-          nodes: (item.nodes || []).reduce((nodeAcc, node) => {
-            nodeAcc[node.id] = node.liked || false;
-            return nodeAcc;
-          }, {}),
-        };
-        return acc;
-      }, {});
-      setLikedSuggestions(likedData);
-    }
-  }, [payload, action]);
-
-  // Handle "like" interactions
-  const handleLike = async (index, entityId = null, event) => {
+  // Handle like button interactions
+  const handleLike = async (index, entityId, event) => {
     try {
-      const suggestion = payload[index];
-      if (!suggestion && !entityId) return;
+      if (!entityId) return;
 
       const rect = event.target.getBoundingClientRect();
-      const targetSpace = suggestion?.space === 'material' ? 'left' : 'right';
       const animationId = Date.now();
 
-      setAnimations((prevAnimations) => [
-        ...prevAnimations,
+      setAnimations((prev) => [
+        ...prev,
         {
           id: animationId,
-          title: entityId
-            ? entities.find((entity) => entity.id === entityId)?.title || 'Unnamed Entity'
-            : suggestion?.title || 'Unnamed Suggestion',
-          target: targetSpace,
+          title: `Entity ${entityId}`,
           startX: rect.left + rect.width / 2,
           startY: rect.top + rect.height / 2,
         },
       ]);
 
-      let endpoint;
-      let requestBody;
-
-      if (action === 'entities') {
-        endpoint = 'http://localhost:4000/likeEntityFromSpace';
-        requestBody = {
-          projectId,
-          messageId,
-          entityId,
-        };
-      } else {
-        endpoint = 'http://localhost:4000/likeSuggestion';
-        requestBody = {
-          projectId,
-          messageId,
-          suggestionIndex: index,
-        };
-
-        if (entityId) {
-          const entity = entities.find((e) => e.id === entityId);
-          if (entity) {
-            requestBody = { ...requestBody, entity };
-          }
-        }
-      }
+      const endpoint = 'http://localhost:4000/likeEntityFromSpace';
+      const requestBody = { projectId, messageId, entityId };
 
       await fetch(endpoint, {
         method: 'POST',
@@ -113,36 +67,18 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Liked request body:', requestBody);
-
-      // Update local liked state
-      if (action === 'entities' && entityId) {
-        setEntities((prevEntities) =>
-          prevEntities.map((entity) =>
-            entity.id === entityId ? { ...entity, liked: true } : entity
-          )
-        );
-      }
+      console.log('Like request sent:', requestBody);
 
       setTimeout(() => {
-        setAnimations((prevAnimations) =>
-          prevAnimations.filter((anim) => anim.id !== animationId)
-        );
+        setAnimations((prev) => prev.filter((anim) => anim.id !== animationId));
       }, 1000);
     } catch (error) {
-      console.error('Error liking suggestion:', error);
+      console.error('Error liking entity:', error);
     }
   };
 
-  // Open image overlay
-  const openOverlay = (imageUrl) => {
-    setOverlayImage(imageUrl);
-  };
-
-  // Close image overlay
-  const closeOverlay = () => {
-    setOverlayImage(null);
-  };
+  const openOverlay = (imageUrl) => setOverlayImage(imageUrl);
+  const closeOverlay = () => setOverlayImage(null);
 
   return (
     <div className="system-message">
@@ -150,7 +86,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       {animations.map((animation) => (
         <div
           key={animation.id}
-          className={`phantom phantom-${animation.target}`}
+          className="phantom"
           style={{
             left: animation.startX,
             top: animation.startY,
@@ -159,34 +95,12 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
           {animation.title}
         </div>
       ))}
-      {action === 'images' && Array.isArray(payload) && payload.length > 0 && (
-        payload.map((item, index) => (
-          <ImageSuggestions
-            key={`image-${index}`}
-            item={item}
-            index={index}
-            likedSuggestions={likedSuggestions}
-            handleLike={handleLike}
-            openOverlay={openOverlay}
-          />
-        ))
-      )}
-      {action === 'nodes' && Array.isArray(payload) && payload.length > 0 && (
-        payload.map((item, index) => (
-          <NodeSuggestions
-            key={`node-${index}`}
-            item={item}
-            index={index}
-            likedSuggestions={likedSuggestions}
-            handleLike={handleLike}
-          />
-        ))
-      )}
       {action === 'entities' && entities.length > 0 && (
-        entities.map((entity, index) => (
+        entities.map((entityId, index) => (
           <EntitySuggestions
-            key={`entity-${index}`}
-            item={entity}
+            key={`entity-${entityId}`}
+            entityId={entityId}
+            projectId={projectId}
             index={index}
             handleLike={handleLike}
           />

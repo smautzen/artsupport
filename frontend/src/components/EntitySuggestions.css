@@ -51,5 +51,6 @@
   
   .like-button.liked {
     background-color: green;
+    cursor: not-allowed;
   }
   
