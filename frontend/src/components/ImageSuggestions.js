@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebase-config';
 import './SystemMessage.css';
+import { db } from '../firebase/firebase-config';
 
-const ImageSuggestions = ({ imageId, projectId, openOverlay }) => {
+const ImageSuggestions = ({ imageId, projectId, openOverlay, handleLike }) => {
   const [imageData, setImageData] = useState(null);
 
   // Subscribe to the Firestore image document
@@ -43,7 +43,7 @@ const ImageSuggestions = ({ imageId, projectId, openOverlay }) => {
       <div className="image-container">
         <button
           className={`like-button ${liked ? 'liked' : ''}`}
-          onClick={() => console.log('Like button clicked for image', imageId)}
+          onClick={handleLike}
           disabled={liked}
         >
           {liked ? 'Liked' : 'Like'}

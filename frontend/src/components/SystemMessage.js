@@ -76,14 +76,14 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
   }, [action, projectId, messageId]);
 
   // Handle "like" interactions
-  const handleLike = async (index, id = null, event) => {
+  const handleLike = async (index, id = null, event, actionType) => {
     try {
       const rect = event.target.getBoundingClientRect();
       const animationId = Date.now();
-      const animationTitle = await getAnimationTitle(index, id, action);
+      const animationTitle = await getAnimationTitle(index, id, actionType);
 
       const targetSpace =
-        action === 'node'
+        actionType === 'node'
           ? payload[index]?.space === 'material'
             ? 'left'
             : 'right'
@@ -100,7 +100,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         },
       ]);
 
-      switch (action) {
+      switch (actionType) {
         case 'nodes':
           await handleNodeLike(index, id);
           break;
@@ -111,7 +111,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
           await handleEntityLike(index, id);
           break;
         default:
-          console.error('Unknown action type:', action);
+          console.error('Unknown action type:', actionType);
       }
 
       setTimeout(() => {
@@ -120,7 +120,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         );
       }, 1000);
     } catch (error) {
-      console.error(`Error handling like for action type ${action}:`, error);
+      console.error(`Error handling like for action type ${actionType}:`, error);
     }
   };
 
@@ -131,33 +131,33 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
     const endpoint = 'http://localhost:4000/likeSuggestion';
     const requestBody = nodeId
       ? {
-        projectId,
-        messageId,
-        suggestionIndex: index,
-        type: 'node',
-        nodeId,
-        categoryId: suggestion.id,
-        title: suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node',
-        description: suggestion.nodes.find((n) => n.id === nodeId)?.description || '',
-        categoryTitle: suggestion.title,
-        categoryDescription: suggestion.description || '',
-      }
+          projectId,
+          messageId,
+          suggestionIndex: index,
+          type: 'node',
+          nodeId,
+          categoryId: suggestion.id,
+          title: suggestion.nodes.find((n) => n.id === nodeId)?.title || 'Unnamed Node',
+          description: suggestion.nodes.find((n) => n.id === nodeId)?.description || '',
+          categoryTitle: suggestion.title,
+          categoryDescription: suggestion.description || '',
+        }
       : {
-        projectId,
-        messageId,
-        suggestionIndex: index,
-        type: 'category',
-        categoryId: suggestion.id,
-        title: suggestion.title,
-        description: suggestion.description || '',
-      };
+          projectId,
+          messageId,
+          suggestionIndex: index,
+          type: 'category',
+          categoryId: suggestion.id,
+          title: suggestion.title,
+          description: suggestion.description || '',
+        };
 
     await axios.post(endpoint, requestBody);
     console.log('Node like request body:', requestBody);
   };
 
   const handleImageLike = async (index) => {
-    const suggestion = payload[index];
+    const suggestion = suggestions[index];
     if (!suggestion) return;
 
     const endpoint = 'http://localhost:4000/likeImage';
@@ -207,7 +207,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
           : suggestion?.title || 'Unnamed Suggestion';
       }
       case 'image': {
-        const suggestion = payload[index];
+        const suggestion = suggestions[index];
         return suggestion?.title || 'Unnamed Image';
       }
       case 'entity': {
@@ -218,7 +218,6 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         return 'Unnamed Animation';
     }
   };
-
 
   // Open image overlay
   const openOverlay = (imageUrl) => {
@@ -253,6 +252,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
             imageId={item.id}
             projectId={projectId}
             openOverlay={openOverlay}
+            handleLike={(e) => handleLike(index, null, e, 'images')}
           />
         ))
       )}
@@ -261,29 +261,27 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         suggestions.map((item, index) => (
           <NodeSuggestions
             key={`node-${index}`}
-            item={item} // Pass the entire item object
+            item={item}
             index={index}
             handleLike={handleLike}
           />
         ))
       )}
-
 
       {action === 'entities' && entities.length > 0 && (
         entities.map((entity, index) => (
           <EntitySuggestions
             key={`entity-${index}`}
-            entityId={entity.id} // Pass the entity ID
-            projectId={projectId} // Pass the project ID
+            entityId={entity.id}
+            projectId={projectId}
             index={index}
             handleLike={handleLike}
           />
         ))
       )}
 
-
       {(action !== 'entities' && action !== 'images' && action !== 'nodes') ||
-        (entities.length === 0 && suggestions.length === 0) ? (
+      (entities.length === 0 && suggestions.length === 0) ? (
         <p>No suggestions available.</p>
       ) : null}
 

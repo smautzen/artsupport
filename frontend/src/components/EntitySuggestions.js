@@ -41,7 +41,7 @@ const EntitySuggestions = ({ entityId, projectId, handleLike, index }) => {
       </div>
       <button
         className={`like-button ${entity.liked ? 'liked' : ''}`}
-        onClick={(event) => handleLike(index, entity.id, event)}
+        onClick={(event) => handleLike(index, entity.id, event, 'entities')}
         disabled={entity.liked}
       >
         {entity.liked ? 'Liked' : 'Like'}

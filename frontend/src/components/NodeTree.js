@@ -201,7 +201,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               />
             );
           case 'image':
-            return <ImageNodeComponent node={node} />;
+            return <ImageNodeComponent node={node} projectId={projectId}/>;
           case 'palette':
             return <PaletteNodeComponent node={node} />;
           default:
@@ -267,7 +267,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
         {!collapsedItems[category.id] && (
           <div className="category-children">
             <div>{category.description}</div>
-            <ImageNodeComponent node={category} />
+            <ImageNodeComponent node={category} projectId={projectId} />
             <NodeEntitiesComponent entities={category.entities} />
             {renderNodes(category.nodes, category, null)}
           </div>

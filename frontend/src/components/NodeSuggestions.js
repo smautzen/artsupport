@@ -28,7 +28,7 @@ const NodeSuggestions = ({ item, index, handleLike }) => {
             <li key={`node-${node.id}`}>
               <button
                 className={`highlight-button ${node.liked ? 'liked' : ''}`}
-                onClick={(event) => handleLike(index, node.id, event)}
+                onClick={(event) => handleLike(index, node.id, event, 'nodes')}
                 disabled={node.liked}
               >
                 {node.title || 'Unnamed Node'}
