@@ -320,6 +320,12 @@ app.post('/testchat', async (req, res) => {
     } else {
       const systemResponse = `Responding to: "${message}"`;
 
+      const entities = [
+        { title: 'Entity suggestion 1', description: 'sample description', liked: false },
+        { title: 'Entity suggestion 2', description: 'sample description', liked: false },
+        { title: 'Entity suggestion 3', description: 'sample description', liked: false },
+      ];
+
       const suggestions = [
         {
           id: uuidv4(),
@@ -333,12 +339,14 @@ app.post('/testchat', async (req, res) => {
               type: 'text',
               title: 'Watercolor Brushes',
               description: 'Brushes designed for soft, flowing effects',
+              entities: entities,
             },
             {
               id: uuidv4(),
               type: 'text',
               title: 'Oil Brushes',
               description: 'Thick, textured strokes for oil-like effects',
+              entities: entities,
             },
           ],
         },
@@ -354,12 +362,14 @@ app.post('/testchat', async (req, res) => {
               type: 'text',
               title: 'Serenity',
               description: 'Ideas for creating a peaceful atmosphere',
+              entities: entities,
             },
             {
               id: uuidv4(),
               type: 'text',
               title: 'Tension',
               description: 'Techniques to depict dramatic or intense moments',
+              entities: entities,
             },
           ],
         },
@@ -424,13 +434,53 @@ app.post('/likeSuggestion', async (req, res) => {
       suggestion.liked = true;
     } else if (type === 'node') {
       const node = suggestion.nodes.find((n) => n.title === title);
-      if (node) node.liked = true;
+      if (node) {
+        node.liked = true;
+
+        // Include entities in the node
+        const entities = node.entities || [];
+
+        // Process Firestore updates
+        const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
+
+        const categorySnapshot = await spaceCollectionRef.where('title', '==', categoryTitle).get();
+
+        if (categorySnapshot.empty) {
+          console.log('Creating parent category for node:', categoryTitle);
+          const categoryRef = await spaceCollectionRef.add({
+            title: categoryTitle,
+            description: categoryDescription || 'No description available',
+            type: 'category',
+            createdAt: new Date().toISOString(),
+          });
+
+          console.log('Adding node to new category:', title);
+          await categoryRef.collection('nodes').add({
+            title,
+            description: description || 'No description provided',
+            type: 'text',
+            entities, // Add entities array to the node
+            createdAt: new Date().toISOString(),
+          });
+        } else {
+          const categoryDoc = categorySnapshot.docs[0];
+          console.log('Adding node to existing category:', title);
+
+          await categoryDoc.ref.collection('nodes').add({
+            title,
+            description: description || 'No description provided',
+            type: 'text',
+            entities, // Add entities array to the node
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
     }
+
     await messageRef.update({ suggestions: messageData.suggestions });
 
-    const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
-
     if (type === 'category') {
+      const spaceCollectionRef = db.collection('projects').doc(projectId).collection(suggestion.space);
       const categorySnapshot = await spaceCollectionRef.where('title', '==', title).get();
 
       if (categorySnapshot.empty) {
@@ -442,36 +492,6 @@ app.post('/likeSuggestion', async (req, res) => {
           createdAt: new Date().toISOString(),
         });
       }
-    } else if (type === 'node') {
-      const categorySnapshot = await spaceCollectionRef.where('title', '==', categoryTitle).get();
-
-      if (categorySnapshot.empty) {
-        console.log('Creating parent category for node:', categoryTitle);
-        const categoryRef = await spaceCollectionRef.add({
-          title: categoryTitle,
-          description: categoryDescription || 'No description available',
-          type: 'category',
-          createdAt: new Date().toISOString(),
-        });
-
-        console.log('Adding node to new category:', title);
-        await categoryRef.collection('nodes').add({
-          title,
-          description: description || 'No description provided',
-          type: 'text',
-          createdAt: new Date().toISOString(),
-        });
-      } else {
-        const categoryDoc = categorySnapshot.docs[0];
-        console.log('Adding node to existing category:', title);
-
-        await categoryDoc.ref.collection('nodes').add({
-          title,
-          description: description || 'No description provided',
-          type: 'text',
-          createdAt: new Date().toISOString(),
-        });
-      }
     }
 
     res.status(200).send({ success: true });
@@ -480,6 +500,7 @@ app.post('/likeSuggestion', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 app.post('/likeImage', async (req, res) => {
   try {
