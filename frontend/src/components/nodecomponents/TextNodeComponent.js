@@ -8,7 +8,7 @@ const TextNodeComponent = ({ node, projectId, space, categoryId }) => (
     <p>{node.description}</p>
     <ImageNodeComponent node={node} />
     <NodeEntitiesComponent 
-      entities={node.entities} 
+      entityIds={node.entities} 
       projectId={projectId} 
       space={space} 
       categoryId={categoryId} 

@@ -20,8 +20,8 @@ const { getFirestore } = require('firebase-admin/firestore');
 
 const serviceAccount = require('./firebase-service-account.json');
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
 });
 
 const db = getFirestore();
@@ -289,6 +289,7 @@ app.post('/testchat', async (req, res) => {
     }
 
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
+    const entitiesCollectionRef = db.collection('projects').doc(projectId).collection('entities');
 
     const userMessageRef = await chatCollectionRef.add({
       messageType: 'user',
@@ -305,29 +306,33 @@ app.post('/testchat', async (req, res) => {
       if (hierarchy.node && hierarchy.category) {
         const destination = { hierarchy };
 
-        entity1Id = uuidv4();
-        entity2Id = uuidv4();
-        entity3Id = uuidv4();
+        // Generate new entities
+        const entity1Id = uuidv4();
+        const entity2Id = uuidv4();
+        const entity3Id = uuidv4();
 
-        const suggestions = [
-          { title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, id: entity1Id, messageId: userMessageRef.id },
-          { title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, id: entity2Id, messageId: userMessageRef.id },
-          { title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, id: entity3Id, messageId: userMessageRef.id },
+        const newEntities = [
+          { id: entity1Id, title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'exploreNode' },
+          { id: entity2Id, title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'exploreNode' },
+          { id: entity3Id, title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'exploreNode' },
         ];
 
-        // Update the node's entities field
+        // Add entities to the entities collection
+        await Promise.all(newEntities.map((entity) => entitiesCollectionRef.doc(entity.id).set(entity)));
+
+        // Replace node's entities array with just IDs
         const spaceCollectionRef = db.collection('projects').doc(projectId).collection(hierarchy.space);
         const nodeRef = spaceCollectionRef.doc(hierarchy.category.id).collection('nodes').doc(hierarchy.node.id);
+
         const nodeDoc = await nodeRef.get();
 
         if (!nodeDoc.exists) {
           return res.status(404).send({ error: 'Node not found.' });
         }
 
-        // Merge new entities into the node's existing entities field
         await nodeRef.set(
           {
-            entities: admin.firestore.FieldValue.arrayUnion(...suggestions),
+            entities: admin.firestore.FieldValue.arrayUnion(entity1Id, entity2Id, entity3Id),
           },
           { merge: true }
         );
@@ -338,11 +343,11 @@ app.post('/testchat', async (req, res) => {
           content: 'Suggestions for entities for node:',
           timestamp: new Date().toISOString(),
           destination,
-          suggestions,
+          suggestions: newEntities.map((entity) => ({ id: entity.id, messageId: entity.messageId })), // Only store IDs and references
           action: 'entities',
         });
 
-        return res.status(201).send({ messageId: userMessageRef.id, destination, suggestions });
+        return res.status(201).send({ messageId: userMessageRef.id, destination, suggestions: newEntities });
       }
 
       // If it's a category, provide node suggestions (to be implemented)
@@ -353,15 +358,18 @@ app.post('/testchat', async (req, res) => {
       // If no hierarchy is provided, return suggestions for categories with nodes
       const systemResponse = `Responding to: "${message}"`;
 
-      entity1Id = uuidv4();
-      entity2Id = uuidv4();
-      entity3Id = uuidv4();
+      const entity1Id = uuidv4();
+      const entity2Id = uuidv4();
+      const entity3Id = uuidv4();
 
-      const entities = [
-        { title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, id: entity1Id, messageId: userMessageRef.id },
-        { title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, id: entity2Id, messageId: userMessageRef.id },
-        { title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, id: entity3Id, messageId: userMessageRef.id },
+      const newEntities = [
+        { id: entity1Id, title: `Entity suggestion ${entity1Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'getSuggestions' },
+        { id: entity2Id, title: `Entity suggestion ${entity2Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'getSuggestions' },
+        { id: entity3Id, title: `Entity suggestion ${entity3Id}`, description: 'sample description', liked: false, messageId: userMessageRef.id, origin: 'getSuggestions' },
       ];
+
+      // Add entities to the entities collection
+      await Promise.all(newEntities.map((entity) => entitiesCollectionRef.doc(entity.id).set(entity)));
 
       const suggestions = [
         {
@@ -376,14 +384,14 @@ app.post('/testchat', async (req, res) => {
               type: 'text',
               title: 'Watercolor Brushes',
               description: 'Brushes designed for soft, flowing effects',
-              entities: entities,
+              entities: [entity1Id, entity2Id, entity3Id], // Only store IDs
             },
             {
               id: uuidv4(),
               type: 'text',
               title: 'Oil Brushes',
               description: 'Thick, textured strokes for oil-like effects',
-              entities: entities,
+              entities: [entity1Id, entity2Id, entity3Id], // Only store IDs
             },
           ],
         },
@@ -399,14 +407,14 @@ app.post('/testchat', async (req, res) => {
               type: 'text',
               title: 'Serenity',
               description: 'Ideas for creating a peaceful atmosphere',
-              entities: entities,
+              entities: [entity1Id, entity2Id, entity3Id], // Only store IDs
             },
             {
               id: uuidv4(),
               type: 'text',
               title: 'Tension',
               description: 'Techniques to depict dramatic or intense moments',
-              entities: entities,
+              entities: [entity1Id, entity2Id, entity3Id], // Only store IDs
             },
           ],
         },
@@ -427,6 +435,7 @@ app.post('/testchat', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 
 app.get('/test-openai', async (req, res) => {
@@ -795,15 +804,64 @@ app.post('/likeEntityFromSpace', async (req, res) => {
       return res.status(400).send({ error: 'Invalid or missing entities array in node or entity index out of range.' });
     }
 
-    // Update the 'liked' attribute for the specified entity
-    nodeData.entities[entityIndex].liked = true;
+    const entity = nodeData.entities[entityIndex];
 
-    console.log('Updated entity to liked:', nodeData.entities[entityIndex]);
+    // Update the 'liked' attribute for the specified entity in the node
+    entity.liked = true;
+
+    console.log('Updated entity to liked in node -> entities:', entity);
 
     // Save the updated entities array back to Firestore
     await nodeRef.update({ entities: nodeData.entities });
 
-    console.log('Successfully updated entity in node.');
+    // If the origin is "exploreNode", update the originating message's entities
+    if (entity.origin === 'exploreNode') {
+      const { messageId, id: entityId } = entity;
+
+      if (!messageId || !entityId) {
+        console.error('Missing messageId or entityId for exploreNode origin:', entity);
+        return res.status(400).send({ error: 'Invalid entity origin attributes.' });
+      }
+
+      const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
+      const messageDoc = await messageRef.get();
+
+      if (!messageDoc.exists) {
+        console.error('Message not found for exploreNode origin:', { messageId, entityId });
+        return res.status(404).send({ error: 'Message not found for exploreNode origin.' });
+      }
+
+      const messageData = messageDoc.data();
+
+      // Validate the 'entities' field in the message document
+      if (!messageData.entities || !Array.isArray(messageData.entities)) {
+        console.error('Entities field is missing or not an array in message:', { messageId });
+        return res.status(400).send({ error: 'Entities field is missing or not an array in message.' });
+      }
+
+      // Locate the entity in the message's 'entities' array
+      const entityIndexInMessage = messageData.entities.findIndex(
+        (messageEntity) => messageEntity.id === entityId
+      );
+
+      if (entityIndexInMessage === -1) {
+        console.error('Entity not found in message entities:', { messageId, entityId });
+        return res.status(404).send({ error: 'Entity not found in message entities.' });
+      }
+
+      // Update the 'liked' attribute in the message's 'entities' array
+      messageData.entities[entityIndexInMessage].liked = true;
+
+      console.log(
+        'Updated entity in message entities to liked:',
+        messageData.entities[entityIndexInMessage]
+      );
+
+      // Update the message in Firestore
+      await messageRef.update({ entities: messageData.entities });
+    }
+
+    console.log('Successfully updated entity in node and, if applicable, in the originating message.');
     res.status(200).send({ success: true });
   } catch (error) {
     console.error('Error in /likeEntityFromSpace:', error);
@@ -1057,17 +1115,17 @@ app.post('/generate-image', async (req, res) => {
       suggestions: imageUrls.map((image, index) => {
         const destination = attachedHierarchy
           ? {
-              space: attachedHierarchy.space,
-              categoryId: attachedHierarchy.category?.id || null,
-              nodeId: attachedHierarchy.node?.id || null,
-              childNodeId: attachedHierarchy.childNode?.id || null,
-            }
+            space: attachedHierarchy.space,
+            categoryId: attachedHierarchy.category?.id || null,
+            nodeId: attachedHierarchy.node?.id || null,
+            childNodeId: attachedHierarchy.childNode?.id || null,
+          }
           : {
-              space: null,
-              categoryId: null,
-              nodeId: null,
-              childNodeId: null,
-            };
+            space: null,
+            categoryId: null,
+            nodeId: null,
+            childNodeId: null,
+          };
 
         return {
           title: image.title,
