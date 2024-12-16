@@ -273,12 +273,14 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         entities.map((entity, index) => (
           <EntitySuggestions
             key={`entity-${index}`}
-            item={entity}
+            entityId={entity.id} // Pass the entity ID
+            projectId={projectId} // Pass the project ID
             index={index}
             handleLike={handleLike}
           />
         ))
       )}
+
 
       {(action !== 'entities' && action !== 'images' && action !== 'nodes') ||
         (entities.length === 0 && suggestions.length === 0) ? (
