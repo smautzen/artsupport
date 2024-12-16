@@ -58,8 +58,8 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
         },
       ]);
 
-      const endpoint = 'http://localhost:4000/likeEntityFromSpace';
-      const requestBody = { projectId, messageId, entityId };
+      const endpoint = 'http://localhost:4000/likeEntity';
+      const requestBody = { projectId, entityId };
 
       await fetch(endpoint, {
         method: 'POST',

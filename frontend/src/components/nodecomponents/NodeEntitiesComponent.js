@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { db } from '../../firebase/firebase-config';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import './NodeEntitiesComponent.css';
 
 const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId }) => {
@@ -10,11 +10,11 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
   // Fetch entity data based on IDs and subscribe for updates
   useEffect(() => {
     if (!entityIds || !Array.isArray(entityIds) || entityIds.length === 0) {
-      console.log('No entities')
+      console.log('No entities');
       return; // No entity IDs to fetch
     }
 
-    console.log('Entities: ', entityIds)
+    console.log('Entities: ', entityIds);
 
     const unsubscribers = entityIds.map((id) => {
       const entityRef = doc(db, 'projects', projectId, 'entities', id);
@@ -58,13 +58,14 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
   // Handle like button click
   const handleLikeClick = async (entityId) => {
     try {
-      const response = await axios.post('http://localhost:4000/likeEntityFromSpace', {
+      if (!entityId) return;
+
+      const requestBody = {
         projectId,
-        space,
-        categoryId,
-        nodeId,
         entityId,
-      });
+      };
+
+      const response = await axios.post('http://localhost:4000/likeEntity', requestBody);
 
       if (response.status === 200) {
         console.log(`Entity with ID ${entityId} liked successfully!`);
@@ -92,7 +93,9 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
       )}
       {unlikedEntities.length > 0 && (
         <>
-          <strong><span>Suggested entities for node:</span></strong>
+          <strong>
+            <span>Suggested entities for node:</span>
+          </strong>
           <div className="entity-list">
             {unlikedEntities.map((entity) => (
               <div key={entity.id} className="entity-box suggested">
@@ -100,6 +103,7 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
                 <button
                   className="like-button"
                   onClick={() => handleLikeClick(entity.id)}
+                  disabled={entity.liked} // Disable the button if already liked
                 >
                   Like
                 </button>
@@ -108,6 +112,7 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
           </div>
         </>
       )}
+      {entities.length === 0 && <p>No entities available.</p>}
     </div>
   );
 };

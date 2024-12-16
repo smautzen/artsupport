@@ -671,101 +671,38 @@ app.post('/likeImage', async (req, res) => {
 
 app.post('/likeEntity', async (req, res) => {
   try {
-    const { projectId, messageId, suggestionIndex } = req.body;
+    const { projectId, entityId } = req.body;
 
     console.log('Received /likeEntity request:', req.body);
 
-    if (!projectId || !messageId || suggestionIndex === undefined) {
-      console.error('Missing required fields:', { projectId, messageId, suggestionIndex });
-      return res.status(400).send({ error: 'Project ID, message ID, and suggestion index are required.' });
+    // Validate input
+    if (!projectId || !entityId) {
+      console.error('Missing required fields:', { projectId, entityId });
+      return res.status(400).send({ error: 'Project ID and entity ID are required.' });
     }
 
-    const messageRef = db.collection('projects').doc(projectId).collection('chat').doc(messageId);
-    const messageDoc = await messageRef.get();
+    // Reference to the entity document in Firestore
+    const entityRef = db.collection('projects').doc(projectId).collection('entities').doc(entityId);
 
-    if (!messageDoc.exists) {
-      console.error(`Message not found: Project ID: ${projectId}, Message ID: ${messageId}`);
-      return res.status(404).send({ error: 'Message not found.' });
+    // Check if the entity exists
+    const entityDoc = await entityRef.get();
+
+    if (!entityDoc.exists) {
+      console.error(`Entity not found: Project ID: ${projectId}, Entity ID: ${entityId}`);
+      return res.status(404).send({ error: 'Entity not found.' });
     }
 
-    const messageData = messageDoc.data();
-    const suggestion = messageData.suggestions[suggestionIndex];
+    // Update the 'liked' attribute to true
+    await entityRef.update({ liked: true });
 
-    console.log('Fetched suggestion:', suggestion);
-
-    if (!suggestion) {
-      console.error('Invalid entity suggestion:', suggestion);
-      return res.status(400).send({ error: 'Invalid entity suggestion.' });
-    }
-
-    // Set the 'liked' attribute for the suggestion to true
-    messageData.suggestions[suggestionIndex].liked = true;
-    await messageRef.update({ suggestions: messageData.suggestions });
-
-    console.log('Updated suggestion with liked attribute:', messageData.suggestions[suggestionIndex]);
-
-    // Fetch the hierarchy from the destination field in messageData
-    const destination = messageData.destination?.hierarchy;
-
-    if (!destination || !destination.space || !destination.category) {
-      console.error('Invalid or missing hierarchy in destination:', destination);
-      return res.status(400).send({ error: 'Invalid or missing hierarchy in destination.' });
-    }
-
-    const { space, category, node } = destination;
-    const categoryId = category.id;
-    const nodeId = node ? node.id : null;
-
-    console.log('Constructed destination:', { space, categoryId, nodeId });
-
-    const destinationRef = db.collection('projects').doc(projectId).collection(space).doc(categoryId);
-
-    if (nodeId) {
-      const nodeRef = destinationRef.collection('nodes').doc(nodeId);
-      const nodeDoc = await nodeRef.get();
-
-      if (!nodeDoc.exists) {
-        console.error('Destination node not found:', { space, categoryId, nodeId });
-        return res.status(404).send({ error: 'Destination node not found.' });
-      }
-
-      console.log('Adding entity to the entities array of the specified node...');
-      await nodeRef.set(
-        {
-          entities: admin.firestore.FieldValue.arrayUnion({
-            title: suggestion.title,
-            description: suggestion.description,
-          }),
-        },
-        { merge: true }
-      );
-    } else {
-      const destinationDoc = await destinationRef.get();
-
-      if (!destinationDoc.exists) {
-        console.error('Destination category not found:', { space, categoryId });
-        return res.status(404).send({ error: 'Destination category not found.' });
-      }
-
-      console.log('Adding entity to the entities array of the category...');
-      await destinationRef.set(
-        {
-          entities: admin.firestore.FieldValue.arrayUnion({
-            title: suggestion.title,
-            description: suggestion.description,
-          }),
-        },
-        { merge: true }
-      );
-    }
-
-    console.log('Successfully saved entity to the specified destination.');
-    res.status(201).send({ success: true });
+    console.log(`Successfully updated entity with ID ${entityId} to liked.`);
+    res.status(200).send({ success: true });
   } catch (error) {
     console.error('Error in /likeEntity:', error);
     res.status(500).send({ error: error.message });
   }
 });
+
 
 app.post('/likeEntityFromSpace', async (req, res) => {
   try {
