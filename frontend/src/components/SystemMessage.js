@@ -82,12 +82,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
       const animationId = Date.now();
       const animationTitle = await getAnimationTitle(index, id, actionType);
 
-      const targetSpace =
-        actionType === 'node'
-          ? payload[index]?.space === 'material'
-            ? 'left'
-            : 'right'
-          : 'center'; // Default for non-node types
+      const targetSpace = payload[index]?.space === 'material' ? 'left' : 'right';
 
       setAnimations((prevAnimations) => [
         ...prevAnimations,
@@ -200,17 +195,17 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
 
   const getAnimationTitle = async (index, id, actionType) => {
     switch (actionType) {
-      case 'node': {
+      case 'nodes': {
         const suggestion = payload[index];
         return id
           ? suggestion.nodes.find((n) => n.id === id)?.title || 'Unnamed Node'
           : suggestion?.title || 'Unnamed Suggestion';
       }
-      case 'image': {
+      case 'images': {
         const suggestion = suggestions[index];
         return suggestion?.title || 'Unnamed Image';
       }
-      case 'entity': {
+      case 'entities': {
         const entity = entities.find((e) => e.id === id);
         return entity?.title || 'Unnamed Entity';
       }
