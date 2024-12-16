@@ -10,7 +10,7 @@ const NodeSuggestions = ({ item, index, handleLike }) => {
       {/* Suggestion Button */}
       <button
         className={`highlight-button ${item.liked ? 'liked' : ''}`}
-        onClick={(event) => handleLike(index, null, event)}
+        onClick={(event) => handleLike(index, null, event, 'nodes')}
         disabled={item.liked}
       >
         {item.title || 'Unnamed Suggestion'}
