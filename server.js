@@ -292,6 +292,7 @@ app.post('/chat', async (req, res) => {
           description: suggestion.description || 'No description available',
           type: 'category',
           space: suggestion.space || 'conceptual',
+          theme: suggestion.theme, // Ensure theme is retained
           nodes: nodesWithEntities,
         };
       })
@@ -1010,65 +1011,62 @@ const exploreNode = async (message, ontology, hierarchy) => {
   }
 };
 
-// Function to handle cases when there is no hierarchy
 const getSuggestions = async (message, ontology, priorities) => {
   try {
+    console.log("Priorities passed to the assistant:", JSON.stringify(priorities, null, 2));
+
     const prompt = `
-      You are an assistant for an art project tool.
+      You are an assistant for an art project tool. Your role is to guide the user by providing structured suggestions to progress their creative process.
 
-      Below is the current ontology for the project:
-      ${JSON.stringify(ontology, null, 2)}
+      **Instructions**:
+      - Generate **exactly 3 categories** based on the user input.
+      - Each category **must contain exactly 3 nodes**.
+      - Each node **must contain exactly 3 entities**.
+      - Use the **exact titles** from the overarching priorities list as the "theme" for categories.
+      - Provide helpful, brainstorming-friendly descriptions. Avoid technical jargon.
 
-      Below is the list of prioritized overarching elements for this project, ordered by importance:
-      ${JSON.stringify(priorities, null, 2)}
+      **Input**:
+      - The user’s message: "${message}"
+      - The priorities list:
+        ${JSON.stringify(priorities.map((p) => p.title))}
 
-      The user has provided the following message:
-      "${message}"
-
-      Your task is to generate actionable and relevant suggestions for the user's project. Actionable suggestions are specific, practical ideas that help the user progress their creative process or refine their project further.
-
-      To ensure your suggestions are as relevant as possible:
-      1. **Deduce the Focus**: Analyze the user's message to determine which overarching element from the priorities list it most likely corresponds to. This element will serve as the main target for your suggestions.
-      2. **Fallback Priority**: If the user's message does not indicate a specific overarching element, prioritize suggestions for the top elements on the priorities list (the ones with the highest importance).
-      
-      Your suggestions must adhere to the following rules:
-      3. Focus on categories or nodes that align with the overarching element and the existing ontology. **Never make a suggestion with a title that already exists in the ontology.**
-      4. Ensure all suggestions are actionable. Avoid vague or overly general ideas. Provide clear, concrete steps, concepts, or inspirations that the user can implement or explore further.
-      5. For each category, assign a "space" attribute:
-         - **Material**: For tools, mediums, and physical aspects like materials, textures, and art techniques.
-         - **Conceptual**: For ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
-         - If you cannot determine which space it belongs to, assign it to the **conceptual** space by default.
-      6. Ensure that:
-         - Categories in the **material** space contain nodes related to physical aspects or techniques.
-         - Categories in the **conceptual** space contain nodes related to ideas, concepts, or emotional expression.
-
-      Return your response in the following JSON format:
+      **Output Format**:
       {
-        "content": "Your actionable response to the user, explaining the suggestions.",
+        "content": "A friendly, natural response summarizing the suggestions.",
         "suggestions": [
           {
-            "title": "Name of the category",
-            "description": "Brief description of the category and its purpose.",
-            "reasoning": "Why this category is relevant and how it helps the user.",
+            "title": "Category Title",
+            "description": "Brief description of the category.",
+            "reasoning": "Reason why this category is helpful.",
             "space": "material or conceptual",
-            "theme": "the title of the prioritized overarching element from the list that it best corresponds to"
+            "theme": "Title from priorities list",
             "nodes": [
               {
-                "title": "Name of the node",
+                "title": "Node Title",
                 "description": "Brief description of the node.",
-                "reasoning": "Why this node was suggested and how it supports the user's goals.",
+                "reasoning": "Reason why this node is suggested.",
                 "entities": [
                   {
-                    "title": "Name of the entity",
-                    "description": "Brief description of the entity.",
-                    "reasoning": "Why this entity was suggested and its value to the user."
-                  }
+                    "title": "Entity Title",
+                    "description": "Short description of the entity.",
+                    "reasoning": "Reason why this entity is important."
+                  },
+                  {...}, {...} // Exactly 3 entities
                 ]
-              }
+              },
+              {...}, {...} // Exactly 3 nodes
             ]
-          }
+          },
+          {...}, {...} // Exactly 3 categories
         ]
       }
+
+      **Important Notes**:
+      - The response is invalid unless it strictly adheres to the structure above:
+        - Exactly 3 categories.
+        - Exactly 3 nodes per category.
+        - Exactly 3 entities per node.
+      - Do not include placeholder text like "Category Title" or "Node Title." Each title must be meaningful and relevant to the user's input.
     `;
 
     const response = await openai.chat.completions.create({
@@ -1076,6 +1074,7 @@ const getSuggestions = async (message, ontology, priorities) => {
       messages: [{ role: 'system', content: prompt }],
     });
 
+    console.log("Raw assistant response:", response.choices[0].message.content);
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error('Error in getSuggestions:', error);
@@ -1087,28 +1086,34 @@ const getSuggestions = async (message, ontology, priorities) => {
 const generateAssistantResponse = async (message, ontology, hierarchy, projectId) => {
   let response;
 
+  // Step 1: Fetch and prepare priorities
+  let priorities = [];
+  if (!hierarchy) {
+    try {
+      priorities = await getPriorities(projectId);
+    } catch (error) {
+      console.error("Error fetching priorities:", error);
+      priorities = [];
+    }
+  }
+
+  console.log("Final priorities being sent to assistant:", JSON.stringify(priorities, null, 2)); // Debug
+
+  // Step 2: Generate response
   if (hierarchy) {
     response = await exploreNode(message, ontology, hierarchy);
     response.action = "nodes"; // Attach 'nodes' as the action if hierarchy exists
   } else {
-    response = await getSuggestions(message, ontology, projectId);
+    response = await getSuggestions(message, ontology, priorities);
     response.action = "nodes"; // Default action if no hierarchy is attached
   }
 
   return response;
 };
 
-
-// Exporting the functions using CommonJS syntax
-module.exports = {
-  generateAssistantResponse,
-  exploreNode,
-  getSuggestions,
-};
-
+// Function to fetch and reorder priorities
 const getPriorities = async (projectId) => {
   try {
-    // Reference to the project document
     const projectRef = db.collection('projects').doc(projectId);
     const projectSnapshot = await projectRef.get();
 
@@ -1116,7 +1121,6 @@ const getPriorities = async (projectId) => {
       throw new Error(`Project with ID ${projectId} does not exist.`);
     }
 
-    // Fetch overarchingElements field from the project document
     const projectData = projectSnapshot.data();
     const overarchingElements = projectData.overarchingElements || [];
 
@@ -1130,20 +1134,19 @@ const getPriorities = async (projectId) => {
       return 0; // Keep original order within groups
     });
 
-    // Return list with only title, description, and example
     const filteredList = orderedElements.map((element) => ({
       title: element.title,
-      description: element.description,
-      example: element.example,
+      description: element.description || "No description provided."
     }));
 
-    console.log('Ordered and filtered overarchingElements:', filteredList);
+    console.log('Ordered and filtered overarchingElements:', JSON.stringify(filteredList, null, 2)); // Debug
     return filteredList;
   } catch (error) {
     console.error('Error fetching priorities:', error);
     throw new Error('Failed to fetch priorities.');
   }
 };
+
 
 app.post('/generate-image', async (req, res) => {
   try {
