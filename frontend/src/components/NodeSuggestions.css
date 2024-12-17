@@ -1,0 +1,33 @@
+.suggestion ul {
+  list-style: none; /* Remove bullets */
+  padding: 0;
+  margin: 0;
+}
+
+.node-item {
+  display: flex; /* Make the container a flexbox */
+  flex-direction: column; /* Stack children vertically */
+  gap: 10px; /* Space between vertical elements */
+  margin-bottom: 15px; /* Space between nodes */
+  align-items: flex-start; /* Align all items to the left */
+  text-align: left; /* Ensure text aligns to the left */
+}
+
+.node-title,
+.node-section {
+  width: 100%; /* Make each section span the full width */
+}
+
+.section-header {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.section-content {
+  margin-left: 10px;
+}
+
+.entity-list {
+  font-size: 0.9em;
+  color: #555;
+}

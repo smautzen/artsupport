@@ -1,0 +1,59 @@
+{
+    "overarchingElements": [
+      {
+        "name": "Artistic Goals",
+        "description": "High-level intentions behind the artwork (e.g., emotional impact, narrative purpose, thematic focus).",
+        "example": "To evoke a sense of nostalgia through urban isolation.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Style",
+        "description": "Visual aesthetics or approach chosen by the artist (e.g., abstract expressionism, realism, surrealism).",
+        "example": "Minimalist style with high contrast.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Themes and Symbolism",
+        "description": "Central ideas, symbols, or metaphors explored in the artwork.",
+        "example": "Shadows to represent isolation.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Medium",
+        "description": "The tools, materials, and methods used for physical creation (e.g., digital painting, oil on canvas, charcoal).",
+        "example": "Oil paint with a palette knife technique.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Tools and Techniques",
+        "description": "Specific tools and methods the artist employs within their chosen medium.",
+        "example": "Using muted palettes to convey mood.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Composition",
+        "description": "Layout and arrangement of visual elements within the piece (e.g., focal points, balance, perspective).",
+        "example": "Off-center composition to create visual tension.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Inspirations and References",
+        "description": "External or internal influences driving the artist’s vision (e.g., historical references, nature, personal experiences).",
+        "example": "Inspired by Jackson Pollock’s use of color and texture.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Emotions and Expression",
+        "description": "Emotional tones or expressions conveyed through the artwork (e.g., joy, rebellion, melancholy).",
+        "example": "Capturing the feeling of quiet loneliness.",
+        "chosenCategories": []
+      },
+      {
+        "name": "Other",
+        "description": "For any element which doesn't fit into any other description",
+        "example": "Unrelated artistic concepts or materials that defy categorization",
+        "chosenCategories": []
+      }
+    ]
+  }
+  

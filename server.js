@@ -38,7 +38,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 app.post('/projects', async (req, res) => {
   try {
     const { name, description, includeSampleData } = req.body;
@@ -49,14 +48,29 @@ app.post('/projects', async (req, res) => {
       includeSampleData,
     });
 
-    // Add the project document
+    // Load the overarchingElements JSON
+    const overarchingElementsPath = path.join(__dirname, 'overarchingElements.json');
+    let overarchingElementsData;
+
+    try {
+      overarchingElementsData = JSON.parse(fs.readFileSync(overarchingElementsPath, 'utf-8'));
+      console.log('Loaded overarching elements:', overarchingElementsData);
+    } catch (error) {
+      console.error('Error reading overarchingElements.json:', error);
+      throw new Error('Failed to load overarching elements');
+    }
+
+    // Add the project document with overarchingElements
     const projectRef = await db.collection('projects').add({
       name,
       description,
       createdAt: new Date().toISOString(),
+      overarchingElements: overarchingElementsData.overarchingElements, // Adding the elements here
     });
 
     const projectId = projectRef.id;
+
+    console.log('Project document added with overarching elements.');
 
     // Add defaultSuggestions document
     const defaultSuggestionsPath = path.join(__dirname, 'defaultSuggestions.json');
@@ -64,7 +78,6 @@ app.post('/projects', async (req, res) => {
 
     try {
       defaultSuggestionsData = JSON.parse(fs.readFileSync(defaultSuggestionsPath, 'utf-8'));
-      console.log('Default Suggestions Data:', defaultSuggestionsData); // Debug log
     } catch (error) {
       console.error('Error reading defaultSuggestions.json:', error);
       throw new Error('Failed to load default suggestions');
@@ -74,7 +87,6 @@ app.post('/projects', async (req, res) => {
 
     for (const [space, suggestions] of Object.entries(defaultSuggestionsData)) {
       const spaceRef = defaultSuggestionsRef.doc(space).collection('items');
-
       for (const suggestion of suggestions) {
         await spaceRef.add({
           title: suggestion.title,
@@ -88,7 +100,7 @@ app.post('/projects', async (req, res) => {
 
     console.log('Default suggestions added to Firestore');
 
-    // Initialize other subcollections
+    // Initialize chat collection
     const chatRef = db.collection('projects').doc(projectId).collection('chat');
 
     await chatRef.add({
@@ -171,7 +183,6 @@ app.post('/projects', async (req, res) => {
   }
 });
 
-
 // Fetch all projects
 app.get('/projects', async (req, res) => {
   try {
@@ -203,10 +214,12 @@ app.delete('/projects/:id', async (req, res) => {
 
 app.post('/chat', async (req, res) => {
   try {
+    // Extract projectId, message, and hierarchy from the request body
     const { projectId, message, hierarchy } = req.body;
 
     console.log('Received payload:', { projectId, message, hierarchy });
 
+    // Validate required fields
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
@@ -214,67 +227,94 @@ app.post('/chat', async (req, res) => {
     // Step 1: Fetch the ontology for the project
     let ontology;
     try {
+      // Fetch the ontology (project data structure) from Firestore
       ontology = await fetchOntology(projectId);
     } catch (error) {
+      console.error('Failed to fetch ontology:', error);
       return res.status(500).send({ error: 'Failed to fetch project ontology.' });
     }
 
-    // Step 2: Save user message to Firestore
+    // Step 2: Save the user's message to Firestore
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
 
+    // Add the user message as a new document
     const userMessageRef = await chatCollectionRef.add({
-      messageType: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-      hierarchy: hierarchy || null, // Save the full hierarchy
+      messageType: 'user', // Denotes that this message is from the user
+      content: message, // User-provided message
+      timestamp: new Date().toISOString(), // Current timestamp
+      hierarchy: hierarchy || null, // Save the hierarchy if provided, otherwise set to null
     });
 
+    // Step 3: Generate the assistant's response
+    const assistantResponse = await generateAssistantResponse(message, ontology, hierarchy, projectId);
 
-    // Step 3: Generate assistant response with emphasis on attached nodes (if any)
-    let assistantResponse;
-    try {
-      assistantResponse = await generateAssistantResponse(message, ontology, hierarchy);
-    } catch (error) {
-      console.error('Error generating assistant response:', error);
-      assistantResponse = {
-        responseMessage: 'There was an error processing your request.',
-        suggestions: [],
-      };
-    }
+    console.log('Full assistantResponse JSON:', JSON.stringify(assistantResponse, null, 2)); // Debugging
 
-    // Step 4: Ensure the response structure for suggestions
-    // Ensure that every node in suggestions has `nodeName`, `description`, `reasoning`, and `id`.
-    const suggestions = assistantResponse.suggestions.map((suggestion) => {
-      return {
-        title: suggestion.title,
-        description: suggestion.description,
-        reasoning: suggestion.reasoning || 'No reasoning provided',
-        space: suggestion.space,
-        nodes: suggestion.nodes.map((node) => ({
-          title: node.title,
-          description: node.description || 'No description available',
-          reasoning: node.reasoning || 'No reasoning provided',
-          space: suggestion.space,
-          id: node.id || uuidv4(), // Generate a unique ID if it's missing
-        })),
-      };
-    });
+    const entityCollectionRef = db.collection('projects').doc(projectId).collection('entities');
 
-    // Step 5: Save assistant response to Firestore
+    // Step 4: Create entities in Firestore and return with consistent IDs
+    const createEntitiesWithIds = async (entities) => {
+      const entityPromises = entities.map(async (entity) => {
+        const entityId = uuidv4(); // Generate a UUID for the entity
+        const entityData = {
+          id: entityId, // Include the same ID in the Firestore document
+          title: entity.title || 'Unnamed Entity',
+          description: entity.description || 'No description available',
+          reasoning: entity.reasoning || '',
+        };
+
+        await entityCollectionRef.doc(entityId).set(entityData); // Use the generated UUID as the document ID
+        return entityId; // Return the generated ID
+      });
+
+      return await Promise.all(entityPromises); // Wait for all entities to be created
+    };
+
+    // Step 5: Transform suggestions and nodes
+    const suggestions = await Promise.all(
+      assistantResponse.suggestions.map(async (suggestion) => {
+        const nodesWithEntities = await Promise.all(
+          suggestion.nodes.map(async (node) => {
+            const entityIds = await createEntitiesWithIds(node.entities); // Save entities and get consistent IDs
+            return {
+              id: uuidv4(),
+              title: node.title,
+              description: node.description || 'No description available',
+              type: 'text',
+              entities: entityIds, // Replace entities with their consistent IDs
+            };
+          })
+        );
+
+        return {
+          id: uuidv4(),
+          title: suggestion.title,
+          description: suggestion.description || 'No description available',
+          type: 'category',
+          space: suggestion.space || 'conceptual',
+          nodes: nodesWithEntities,
+        };
+      })
+    );
+
+    // Step 6: Save assistant message to Firestore
     await chatCollectionRef.add({
       messageType: 'system',
-      content: assistantResponse.responseMessage,
+      content: assistantResponse.content,
       timestamp: new Date().toISOString(),
+      action: assistantResponse.action,
       suggestions: suggestions,
     });
 
-    // Step 6: Respond to the frontend
+    // Step 7: Respond to the frontend
     res.status(201).send({
       messageId: userMessageRef.id,
-      response: assistantResponse.responseMessage,
+      response: assistantResponse.content,
       suggestions: suggestions,
     });
+
   } catch (error) {
+    // Error handling for unexpected issues
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
@@ -903,126 +943,205 @@ const fetchOntology = async (projectId) => {
   }
 };
 
-const generateAssistantResponse = async (message, ontology, hierarchy) => {
+// Function to handle cases when there is a hierarchy
+const exploreNode = async (message, ontology, hierarchy) => {
   try {
-    let prompt;
+    const prompt = `
+      You are an assistant for an art project tool. 
 
-    if (hierarchy) {
-      // If nodes are attached, focus on the attached nodes
-      prompt = `
-        You are an assistant for an art project tool. 
+      Below is the current ontology for the project:
+      ${JSON.stringify(ontology, null, 2)}
 
-        Below is the current ontology for the project:
-        ${JSON.stringify(ontology, null, 2)}
+      The user has provided the following message:
+      "${message}"
 
-        The user has provided the following message:
-        "${message}"
+      The user has attached the following nodes:
+      ${JSON.stringify(hierarchy, null, 2)}
 
-        The user has attached the following nodes:
-        ${JSON.stringify(hierarchy, null, 2)}
+      Your task is to:
+      1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
+      2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well (NEVER make a suggestion with a title that already exists in the ontology).
+      3. For each category, node, and child node, assign a "space" attribute:
+         - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
+         - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
+         - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
+      4. Ensure that:
+         - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
+         - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
+      5. Return your response in the following JSON format:
+      {
+        "responseMessage": "Your primary response to the user.",
+        "suggestions": [
+          {
+            "title": "Name of the category",
+            "description": "Brief description of the category",
+            "reasoning": "Why you suggested this category.",
+            "space": "material or conceptual",
+            "nodes": [
+              {
+                "title": "Name of the node",
+                "description": "Brief description of the node",
+                "reasoning": "Why you suggested this node",
+                "space": "same as parent",
+                "childNodes": [
+                  {
+                    "title": "Name of the child node",
+                    "description": "Brief description of the child node",
+                    "reasoning": "Why you suggested this child node",
+                    "space": "same as parent"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    `;
 
-        Your task is to:
-        1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
-        2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well (NEVER make a suggestion with a title that already exists in the ontology).
-        3. For each category, node, and child node, assign a "space" attribute:
-           - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
-           - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
-           - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
-        4. Ensure that:
-           - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
-           - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
-        5. Return your response in the following JSON format:
-        {
-          "responseMessage": "Your primary response to the user.",
-          "suggestions": [
-            {
-              "title": "Name of the category",
-              "description": "Brief description of the category",
-              "reasoning": "Why you suggested this category.",
-              "space": "material or conceptual",
-              "nodes": [
-                {
-                  "title": "Name of the node",
-                  "description": "Brief description of the node",
-                  "reasoning": "Why you suggested this node",
-                  "space": "same as parent",
-                  "childNodes": [
-                    {
-                      "title": "Name of the child node",
-                      "description": "Brief description of the child node",
-                      "reasoning": "Why you suggested this child node",
-                      "space": "same as parent"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      `;
-    } else {
-      // If no nodes are attached, focus on the user's message only
-      prompt = `
-        You are an assistant for an art project tool. 
-
-        Below is the current ontology for the project:
-        ${JSON.stringify(ontology, null, 2)}
-
-        The user has provided the following message:
-        "${message}"
-
-        Your task is to:
-        1. Focus on the user's message and provide suggestions based on the context of the current project.
-        2. Suggest categories or nodes that align with the user's message and the existing ontology (NEVER make a suggestion with a title that already exists in the ontology).
-        3. For each category, node, and child node, assign a "space" attribute:
-           - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
-           - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
-           - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
-        4. Ensure that:
-           - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
-           - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
-        5. Return your response in the following JSON format:
-        {
-          "responseMessage": "Your primary response to the user.",
-          "suggestions": [
-            {
-              "title": "Name of the category",
-              "description": "Brief description of the category",
-              "space": "material or conceptual",
-              "nodes": [
-                {
-                  "title": "Name of the node",
-                  "description": "Brief description of the node",
-                  "reasoning": "Why you suggested this node",
-                  "space": "same as parent",
-                  "childNodes": [
-                    {
-                      "title": "Name of the child node",
-                      "description": "Brief description of the child node",
-                      "reasoning": "Why you suggested this child node",
-                      "space": "same as parent"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      `;
-    }
-
-    // Send the prompt to OpenAI
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'system', content: prompt }],
     });
 
-    // Parse and return the assistant's response
-    const assistantOutput = response.choices[0].message.content;
-    return JSON.parse(assistantOutput);
+    return JSON.parse(response.choices[0].message.content);
   } catch (error) {
-    console.error('Error generating assistant response:', error);
-    throw new Error('Failed to generate assistant response.');
+    console.error('Error in exploreNode:', error);
+    throw new Error('Failed to explore nodes.');
+  }
+};
+
+// Function to handle cases when there is no hierarchy
+const getSuggestions = async (message, ontology, priorities) => {
+  try {
+    const prompt = `
+      You are an assistant for an art project tool.
+
+      Below is the current ontology for the project:
+      ${JSON.stringify(ontology, null, 2)}
+
+      Below is the list of prioritized overarching elements for this project, ordered by importance:
+      ${JSON.stringify(priorities, null, 2)}
+
+      The user has provided the following message:
+      "${message}"
+
+      Your task is to generate actionable and relevant suggestions for the user's project. Actionable suggestions are specific, practical ideas that help the user progress their creative process or refine their project further.
+
+      To ensure your suggestions are as relevant as possible:
+      1. **Deduce the Focus**: Analyze the user's message to determine which overarching element from the priorities list it most likely corresponds to. This element will serve as the main target for your suggestions.
+      2. **Fallback Priority**: If the user's message does not indicate a specific overarching element, prioritize suggestions for the top elements on the priorities list (the ones with the highest importance).
+      
+      Your suggestions must adhere to the following rules:
+      3. Focus on categories or nodes that align with the overarching element and the existing ontology. **Never make a suggestion with a title that already exists in the ontology.**
+      4. Ensure all suggestions are actionable. Avoid vague or overly general ideas. Provide clear, concrete steps, concepts, or inspirations that the user can implement or explore further.
+      5. For each category, assign a "space" attribute:
+         - **Material**: For tools, mediums, and physical aspects like materials, textures, and art techniques.
+         - **Conceptual**: For ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
+         - If you cannot determine which space it belongs to, assign it to the **conceptual** space by default.
+      6. Ensure that:
+         - Categories in the **material** space contain nodes related to physical aspects or techniques.
+         - Categories in the **conceptual** space contain nodes related to ideas, concepts, or emotional expression.
+
+      Return your response in the following JSON format:
+      {
+        "content": "Your actionable response to the user, explaining the suggestions.",
+        "suggestions": [
+          {
+            "title": "Name of the category",
+            "description": "Brief description of the category and its purpose.",
+            "reasoning": "Why this category is relevant and how it helps the user.",
+            "space": "material or conceptual",
+            "theme": "the title of the prioritized overarching element from the list that it best corresponds to"
+            "nodes": [
+              {
+                "title": "Name of the node",
+                "description": "Brief description of the node.",
+                "reasoning": "Why this node was suggested and how it supports the user's goals.",
+                "entities": [
+                  {
+                    "title": "Name of the entity",
+                    "description": "Brief description of the entity.",
+                    "reasoning": "Why this entity was suggested and its value to the user."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'system', content: prompt }],
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error('Error in getSuggestions:', error);
+    throw new Error('Failed to get suggestions.');
+  }
+};
+
+
+const generateAssistantResponse = async (message, ontology, hierarchy, projectId) => {
+  let response;
+
+  if (hierarchy) {
+    response = await exploreNode(message, ontology, hierarchy);
+    response.action = "nodes"; // Attach 'nodes' as the action if hierarchy exists
+  } else {
+    response = await getSuggestions(message, ontology, projectId);
+    response.action = "nodes"; // Default action if no hierarchy is attached
+  }
+
+  return response;
+};
+
+
+// Exporting the functions using CommonJS syntax
+module.exports = {
+  generateAssistantResponse,
+  exploreNode,
+  getSuggestions,
+};
+
+const getPriorities = async (projectId) => {
+  try {
+    // Reference to the project document
+    const projectRef = db.collection('projects').doc(projectId);
+    const projectSnapshot = await projectRef.get();
+
+    if (!projectSnapshot.exists) {
+      throw new Error(`Project with ID ${projectId} does not exist.`);
+    }
+
+    // Fetch overarchingElements field from the project document
+    const projectData = projectSnapshot.data();
+    const overarchingElements = projectData.overarchingElements || [];
+
+    // Reorder elements: empty chosenCategories first, then non-empty
+    const orderedElements = [...overarchingElements].sort((a, b) => {
+      const aEmpty = !a.chosenCategories || a.chosenCategories.length === 0;
+      const bEmpty = !b.chosenCategories || b.chosenCategories.length === 0;
+
+      if (aEmpty && !bEmpty) return -1; // a comes first if it has no categories
+      if (!aEmpty && bEmpty) return 1;  // b comes first if it has no categories
+      return 0; // Keep original order within groups
+    });
+
+    // Return list with only title, description, and example
+    const filteredList = orderedElements.map((element) => ({
+      title: element.title,
+      description: element.description,
+      example: element.example,
+    }));
+
+    console.log('Ordered and filtered overarchingElements:', filteredList);
+    return filteredList;
+  } catch (error) {
+    console.error('Error fetching priorities:', error);
+    throw new Error('Failed to fetch priorities.');
   }
 };
 
@@ -1121,11 +1240,11 @@ app.post('/generate-image', async (req, res) => {
         id: image.id, // Only include the ID
         destination: attachedHierarchy
           ? {
-              space: attachedHierarchy.space || null,
-              categoryId: attachedHierarchy.category?.id || null,
-              nodeId: attachedHierarchy.node?.id || null,
-              childNodeId: attachedHierarchy.childNode?.id || null,
-            }
+            space: attachedHierarchy.space || null,
+            categoryId: attachedHierarchy.category?.id || null,
+            nodeId: attachedHierarchy.node?.id || null,
+            childNodeId: attachedHierarchy.childNode?.id || null,
+          }
           : null,
       })),
     };

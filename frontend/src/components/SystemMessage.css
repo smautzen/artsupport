@@ -22,6 +22,11 @@
     font-size: 14px;
     color: #555;
   }
+
+  .item-description {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
   
   .highlight-button {
     background: none;

@@ -259,6 +259,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
             item={item}
             index={index}
             handleLike={handleLike}
+            projectId={projectId}
           />
         ))
       )}
