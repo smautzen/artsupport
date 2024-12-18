@@ -310,35 +310,38 @@ app.post('/chat', async (req, res) => {
                     title: entity.title,
                     description: entity.description,
                     reasoning: entity.reasoning,
-                    liked: entity.liked || false,
+                    liked: entity.liked || false, // Ensure liked is set
                     messageId: userMessageRef.id,
                   });
                   return entityId;
                 })
               );
-
+    
               return {
                 id: uuidv4(),
                 title: node.title,
                 description: node.description || 'No description available',
+                reasoning: node.reasoning || null,
                 type: 'text',
                 entities: entityIds, // Replace entities with their IDs
+                liked: node.liked || false, // Include liked attribute
               };
             })
           );
-
+    
           return {
-            id: uuidv4(),
+            id: suggestion.id,
             title: suggestion.title,
             description: suggestion.description || 'No description available',
             type: 'category',
             space: suggestion.space || 'conceptual',
             theme: suggestion.theme,
+            liked: suggestion.liked || false, // Include liked attribute
             nodes: nodesWithEntities,
           };
         })
       );
-
+    
       // Save system message
       await chatCollectionRef.add({
         messageType: 'system',
@@ -347,12 +350,13 @@ app.post('/chat', async (req, res) => {
         action: assistantResponse.action,
         suggestions,
       });
-
+    
       res.status(201).send({
         messageId: userMessageRef.id,
         suggestions,
       });
-    } else {
+    }
+     else {
       res.status(400).send({ error: 'Unsupported action type in assistant response.' });
     }
   } catch (error) {
@@ -1137,34 +1141,127 @@ const getSuggestions = async (message, ontology, priorities) => {
   }
 };
 
+const getNodeSuggestionsForCategory = async (message, ontology, hierarchy) => {
+  try {
+    console.log("Processing hierarchy for category exploration:", JSON.stringify(hierarchy, null, 2));
+
+    const prompt = `
+      You are an assistant for an art project tool. Your role is to guide the user by providing structured suggestions to progress their creative process.
+
+      **Instructions**:
+      - Generate **exactly 3 nodes** based on the user input.
+      - Each node **must contain exactly 3 entities**.
+      - Provide helpful, brainstorming-friendly descriptions. Avoid technical jargon.
+
+      **Input**:
+      - The user’s message: "${message}"
+      - The category description: "${hierarchy.category.description}"
+
+      **Output Format**:
+      [
+        {
+          "title": "Node Title",
+          "description": "Brief description of the node.",
+          "reasoning": "Reason why this node is suggested.",
+          "entities": [
+            {
+              "title": "Entity Title",
+              "description": "Short description of the entity.",
+              "reasoning": "Reason why this entity is important."
+            },
+            {...}, {...} // Exactly 3 entities
+          ]
+        },
+        {...}, {...} // Exactly 3 nodes
+      ]
+
+      **Important Notes**:
+      - The response is invalid unless it strictly adheres to the structure above:
+        - Exactly 3 nodes.
+        - Exactly 3 entities per node.
+      - Do not include placeholder text like "Node Title" or "Entity Title." Each title must be meaningful and relevant to the category description.
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'system', content: prompt }],
+    });
+
+    console.log("Raw assistant response:", response.choices[0].message.content);
+
+    const nodes = JSON.parse(response.choices[0].message.content);
+
+    // Construct the response to align with the required array-based structure
+    return {
+      content: `Suggestions for nodes based on the category: ${hierarchy.category.title}`,
+      suggestions: [
+        {
+          id: hierarchy.category.id,
+          title: hierarchy.category.title,
+          description: hierarchy.category.description,
+          space: hierarchy.space,
+          liked: true, // Setting liked attribute as true
+          type: hierarchy.category.type,
+          theme: hierarchy.category.title || "default", // Adding a theme
+          nodes: nodes.map((node) => ({
+            id: uuidv4(),
+            title: node.title,
+            description: node.description,
+            reasoning: node.reasoning,
+            type: 'text',
+            entities: node.entities.map((entity) => ({
+              id: uuidv4(),
+              title: entity.title,
+              description: entity.description,
+              reasoning: entity.reasoning,
+              liked: false,
+            })),
+          })),
+        },
+      ],
+    };
+  } catch (error) {
+    console.error('Error in getNodeSuggestionsForCategory:', error);
+    throw new Error('Failed to generate node suggestions for category.');
+  }
+};
+
 
 const generateAssistantResponse = async (message, ontology, hierarchy, projectId) => {
   let response;
 
-  // Step 1: Fetch and prepare priorities
-  let priorities = [];
-  if (!hierarchy) {
-    try {
-      priorities = await getPriorities(projectId);
-    } catch (error) {
-      console.error("Error fetching priorities:", error);
-      priorities = [];
-    }
-  }
-
-  console.log("Final priorities being sent to assistant:", JSON.stringify(priorities, null, 2)); // Debug
-
-  // Step 2: Generate response
+  // If a hierarchy was attached
   if (hierarchy) {
-    response = await exploreNode(message, ontology, hierarchy);
-    response.action = "entities"; // Attach 'nodes' as the action if hierarchy exists
+    if (hierarchy.category && hierarchy.node === null) {
+      // If it's a category, we generate suggestions for nodes with entities for this category
+      response = await getNodeSuggestionsForCategory(message, ontology, hierarchy);
+      response.action = "nodes";
+    } else if (hierarchy.category && hierarchy.node) {
+      // If it's a node, we explore entities for it
+      response = await exploreNode(message, ontology, hierarchy);
+      response.action = "entities"; // Attach 'nodes' as the action if hierarchy exists
+    } else {
+      // If the hierarchy contains no category, it's invalid and we throw an error
+      throw new Error("Invalid hierarchy: A valid category is required to proceed.");
+    }
   } else {
+    // If no hierarchy was attached, we generate suggestions for categories with nodes and entities
+    let priorities = [];
+    if (!hierarchy) {
+      try {
+        priorities = await getPriorities(projectId);
+      } catch (error) {
+        console.error("Error fetching priorities:", error);
+        priorities = [];
+      }
+    }
     response = await getSuggestions(message, ontology, priorities);
     response.action = "nodes"; // Default action if no hierarchy is attached
   }
 
   return response;
 };
+
 
 // Function to fetch and reorder priorities
 const getPriorities = async (projectId) => {
