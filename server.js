@@ -211,111 +211,151 @@ app.delete('/projects/:id', async (req, res) => {
   }
 });
 
-
 app.post('/chat', async (req, res) => {
   try {
-    // Extract projectId, message, and hierarchy from the request body
     const { projectId, message, hierarchy } = req.body;
 
     console.log('Received payload:', { projectId, message, hierarchy });
 
-    // Validate required fields
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
 
-    // Step 1: Fetch the ontology for the project
+    // Step 1: Fetch the ontology
     let ontology;
     try {
-      // Fetch the ontology (project data structure) from Firestore
       ontology = await fetchOntology(projectId);
     } catch (error) {
       console.error('Failed to fetch ontology:', error);
       return res.status(500).send({ error: 'Failed to fetch project ontology.' });
     }
 
-    // Step 2: Save the user's message to Firestore
+    // Step 2: Save user message
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
-
-    // Add the user message as a new document
     const userMessageRef = await chatCollectionRef.add({
-      messageType: 'user', // Denotes that this message is from the user
-      content: message, // User-provided message
-      timestamp: new Date().toISOString(), // Current timestamp
-      hierarchy: hierarchy || null, // Save the hierarchy if provided, otherwise set to null
+      messageType: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      hierarchy: hierarchy || null,
     });
 
-    // Step 3: Generate the assistant's response
+    // Step 3: Generate assistant response
     const assistantResponse = await generateAssistantResponse(message, ontology, hierarchy, projectId);
+    console.log('Assistant response:', JSON.stringify(assistantResponse, null, 2));
 
-    console.log('Full assistantResponse JSON:', JSON.stringify(assistantResponse, null, 2)); // Debugging
+    // Step 4: Handle based on action
+    if (assistantResponse.action === 'entities') {
+      // Define the entity collection reference
+      const entityCollectionRef = db.collection('projects').doc(projectId).collection('entities');
 
-    const entityCollectionRef = db.collection('projects').doc(projectId).collection('entities');
+      // Save the entities in Firestore
+      const entityIds = await Promise.all(
+        assistantResponse.suggestions.map(async (suggestion) => {
+          const entityId = suggestion.id; // Use the existing ID from the suggestion
+          await entityCollectionRef.doc(entityId).set({
+            id: entityId,
+            title: suggestion.title || 'Unnamed Entity',
+            description: suggestion.description || 'No description available',
+            liked: suggestion.liked || false,
+            messageId: userMessageRef.id,
+            origin: suggestion.origin || 'exploreNode',
+          });
+          return entityId;
+        })
+      );
 
-    // Step 4: Create entities in Firestore and return with consistent IDs
-    const createEntitiesWithIds = async (entities) => {
-      const entityPromises = entities.map(async (entity) => {
-        const entityId = uuidv4(); // Generate a UUID for the entity
-        const entityData = {
-          id: entityId, // Include the same ID in the Firestore document
-          title: entity.title || 'Unnamed Entity',
-          description: entity.description || 'No description available',
-          reasoning: entity.reasoning || '',
-        };
+      // Update the node in the hierarchy with the new entity IDs
+      if (assistantResponse.destination?.hierarchy?.node) {
+        const { space, category, node } = assistantResponse.destination.hierarchy;
+        if (space && category?.id && node?.id) {
+          const nodeRef = db
+            .collection('projects')
+            .doc(projectId)
+            .collection(space)
+            .doc(category.id)
+            .collection('nodes')
+            .doc(node.id);
 
-        await entityCollectionRef.doc(entityId).set(entityData); // Use the generated UUID as the document ID
-        return entityId; // Return the generated ID
+          await nodeRef.update({
+            entities: admin.firestore.FieldValue.arrayUnion(...entityIds),
+          });
+        }
+      }
+
+      // Save system message with suggestions
+      await chatCollectionRef.add({
+        messageType: 'system',
+        content: assistantResponse.content,
+        timestamp: new Date().toISOString(),
+        action: assistantResponse.action,
+        destination: assistantResponse.destination,
+        suggestions: assistantResponse.suggestions.map((suggestion) => ({
+          id: suggestion.id,
+          messageId: userMessageRef.id,
+        })),
+      });
+    }
+    else if (assistantResponse.action === 'nodes') {
+      // **Handling for getSuggestions response**
+      const suggestions = await Promise.all(
+        assistantResponse.suggestions.map(async (suggestion) => {
+          const nodesWithEntities = await Promise.all(
+            suggestion.nodes.map(async (node) => {
+              const entityCollectionRef = db.collection('projects').doc(projectId).collection('entities');
+              const entityIds = await Promise.all(
+                node.entities.map(async (entity) => {
+                  const entityId = uuidv4();
+                  await entityCollectionRef.doc(entityId).set({
+                    id: entityId,
+                    title: entity.title,
+                    description: entity.description,
+                    reasoning: entity.reasoning,
+                    liked: entity.liked || false,
+                    messageId: userMessageRef.id,
+                  });
+                  return entityId;
+                })
+              );
+
+              return {
+                id: uuidv4(),
+                title: node.title,
+                description: node.description || 'No description available',
+                type: 'text',
+                entities: entityIds, // Replace entities with their IDs
+              };
+            })
+          );
+
+          return {
+            id: uuidv4(),
+            title: suggestion.title,
+            description: suggestion.description || 'No description available',
+            type: 'category',
+            space: suggestion.space || 'conceptual',
+            theme: suggestion.theme,
+            nodes: nodesWithEntities,
+          };
+        })
+      );
+
+      // Save system message
+      await chatCollectionRef.add({
+        messageType: 'system',
+        content: assistantResponse.content,
+        timestamp: new Date().toISOString(),
+        action: assistantResponse.action,
+        suggestions,
       });
 
-      return await Promise.all(entityPromises); // Wait for all entities to be created
-    };
-
-    // Step 5: Transform suggestions and nodes
-    const suggestions = await Promise.all(
-      assistantResponse.suggestions.map(async (suggestion) => {
-        const nodesWithEntities = await Promise.all(
-          suggestion.nodes.map(async (node) => {
-            const entityIds = await createEntitiesWithIds(node.entities); // Save entities and get consistent IDs
-            return {
-              id: uuidv4(),
-              title: node.title,
-              description: node.description || 'No description available',
-              type: 'text',
-              entities: entityIds, // Replace entities with their consistent IDs
-            };
-          })
-        );
-
-        return {
-          id: uuidv4(),
-          title: suggestion.title,
-          description: suggestion.description || 'No description available',
-          type: 'category',
-          space: suggestion.space || 'conceptual',
-          theme: suggestion.theme, // Ensure theme is retained
-          nodes: nodesWithEntities,
-        };
-      })
-    );
-
-    // Step 6: Save assistant message to Firestore
-    await chatCollectionRef.add({
-      messageType: 'system',
-      content: assistantResponse.content,
-      timestamp: new Date().toISOString(),
-      action: assistantResponse.action,
-      suggestions: suggestions,
-    });
-
-    // Step 7: Respond to the frontend
-    res.status(201).send({
-      messageId: userMessageRef.id,
-      response: assistantResponse.content,
-      suggestions: suggestions,
-    });
-
+      res.status(201).send({
+        messageId: userMessageRef.id,
+        suggestions,
+      });
+    } else {
+      res.status(400).send({ error: 'Unsupported action type in assistant response.' });
+    }
   } catch (error) {
-    // Error handling for unexpected issues
     console.error('Error handling chat message:', error);
     res.status(500).send({ error: error.message });
   }
@@ -948,7 +988,7 @@ const fetchOntology = async (projectId) => {
 const exploreNode = async (message, ontology, hierarchy) => {
   try {
     const prompt = `
-      You are an assistant for an art project tool. 
+      You are an assistant for an art project tool.
 
       Below is the current ontology for the project:
       ${JSON.stringify(ontology, null, 2)}
@@ -956,47 +996,26 @@ const exploreNode = async (message, ontology, hierarchy) => {
       The user has provided the following message:
       "${message}"
 
-      The user has attached the following nodes:
+      The user has attached the following hierarchy:
       ${JSON.stringify(hierarchy, null, 2)}
 
       Your task is to:
-      1. Focus strictly on the attached nodes. Your suggestions should be primarily based on how to explore these nodes further in the context of the user's project.
-      2. For each attached node, suggest ways to expand or elaborate on it. If the node has child nodes, suggest how they can be explored as well (NEVER make a suggestion with a title that already exists in the ontology).
-      3. For each category, node, and child node, assign a "space" attribute:
-         - **Material** space should be assigned to tools, mediums, and physical aspects like materials, textures, and art techniques.
-         - **Conceptual** space should be assigned to ideas, concepts, emotions, and abstract notions like artistic intent, inspiration, or themes.
-         - **If you cannot determine which space it belongs to**, assign it to the **conceptual** space by default.
-      4. Ensure that:
-         - Any category assigned to the "material" space should contain nodes related to physical aspects or techniques.
-         - Any category assigned to the "conceptual" space should contain nodes related to ideas, concepts, or emotional expression.
-      5. Return your response in the following JSON format:
-      {
-        "responseMessage": "Your primary response to the user.",
-        "suggestions": [
-          {
-            "title": "Name of the category",
-            "description": "Brief description of the category",
-            "reasoning": "Why you suggested this category.",
-            "space": "material or conceptual",
-            "nodes": [
-              {
-                "title": "Name of the node",
-                "description": "Brief description of the node",
-                "reasoning": "Why you suggested this node",
-                "space": "same as parent",
-                "childNodes": [
-                  {
-                    "title": "Name of the child node",
-                    "description": "Brief description of the child node",
-                    "reasoning": "Why you suggested this child node",
-                    "space": "same as parent"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
+      - Suggest exactly 3 entities to help expand or elaborate on the provided hierarchy node.
+      - For each entity, include:
+        - A title.
+        - A brief description.
+        - Reasoning for why the entity is suggested.
+      - Do NOT include IDs, spaces, or unnecessary metadata.
+
+      Return your response in this format:
+      [
+        {
+          "title": "Entity Title",
+          "description": "Brief description of the entity",
+          "reasoning": "Reason for suggesting this entity"
+        },
+        {...}, {...} // Exactly 3 entities
+      ]
     `;
 
     const response = await openai.chat.completions.create({
@@ -1004,12 +1023,48 @@ const exploreNode = async (message, ontology, hierarchy) => {
       messages: [{ role: 'system', content: prompt }],
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    // Parse the assistant's response
+    const suggestions = JSON.parse(response.choices[0].message.content);
+
+    // Server-side processing to match `testchat` structure
+    const messageId = uuidv4();
+    const entities = suggestions.map((suggestion) => ({
+      id: uuidv4(),
+      title: suggestion.title,
+      description: suggestion.description,
+      liked: false,
+      messageId,
+      origin: 'exploreNode',
+    }));
+
+    const nodes = [
+      {
+        id: uuidv4(),
+        title: hierarchy.node.title,
+        description: hierarchy.node.description || 'No description available',
+        type: 'text',
+        createdAt: new Date().toISOString(),
+        liked: true,
+        entities: entities.map((entity) => entity.id), // Link entity IDs to the node
+        childNodes: [], // Assuming no child nodes for now
+      },
+    ];
+
+    return {
+      action: 'entities',
+      content: `Suggestions for entities for node: ${hierarchy.node.title}`,
+      destination: {
+        hierarchy,
+      },
+      suggestions: entities,
+      nodes,
+    };
   } catch (error) {
     console.error('Error in exploreNode:', error);
     throw new Error('Failed to explore nodes.');
   }
 };
+
 
 const getSuggestions = async (message, ontology, priorities) => {
   try {
@@ -1102,7 +1157,7 @@ const generateAssistantResponse = async (message, ontology, hierarchy, projectId
   // Step 2: Generate response
   if (hierarchy) {
     response = await exploreNode(message, ontology, hierarchy);
-    response.action = "nodes"; // Attach 'nodes' as the action if hierarchy exists
+    response.action = "entities"; // Attach 'nodes' as the action if hierarchy exists
   } else {
     response = await getSuggestions(message, ontology, priorities);
     response.action = "nodes"; // Default action if no hierarchy is attached
