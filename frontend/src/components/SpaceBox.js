@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import './SpaceBox.css'; // Import the CSS file
-import NodeTree from './NodeTree'; // Import the NodeTree component
+import React, { useState, useRef, useEffect } from 'react';
+import './SpaceBox.css';
+import NodeTree from './NodeTree';
 import DefaultCategorySuggestions from './DefaultCategorySuggestions';
 
 import materialSpaceIcon from '../assets/materialspace.png';
@@ -9,6 +9,22 @@ import helpIcon from '../assets/help.png';
 
 const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, onGenerateImages }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showNewCategoryMenu, setShowNewCategoryMenu] = useState(false);
+  const menuRef = useRef();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowNewCategoryMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const icon = spaceName.toLowerCase() === 'material' ? materialSpaceIcon : conceptualSpaceIcon;
 
@@ -22,17 +38,16 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
       ? 'This space includes all physical tools, materials, and techniques used to create the work.'
       : 'This space includes abstract ideas, themes, and emotions guiding the creative process.';
 
-  const handleNodeClick = (hierarchy) => {
-    console.log('SpaceBox: Updated hierarchy received:', hierarchy);
-    if (onHierarchyChange) {
-      onHierarchyChange(hierarchy);
-    }
+  const handleAddManually = () => {
+    console.log('Add manually clicked');
+    // Add functionality for manual category addition here
+    setShowNewCategoryMenu(false);
   };
 
-  const handleNodeDeselect = () => {
-    if (onHierarchyChange) {
-      onHierarchyChange(null);
-    }
+  const handleGenerateSuggestions = () => {
+    console.log('Generate suggestions clicked');
+    // Add functionality for generating suggestions here
+    setShowNewCategoryMenu(false);
   };
 
   return (
@@ -54,13 +69,31 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
         </div>
         {showTooltip && <div className="tooltip">{tooltipText}</div>}
       </div>
+      <div className="new-category-wrapper">
+        <button
+          className="new-category-button"
+          onClick={() => setShowNewCategoryMenu((prev) => !prev)}
+        >
+          New category +
+        </button>
+        {showNewCategoryMenu && (
+          <div ref={menuRef} className="new-category-menu">
+            <button className="menu-option" onClick={handleAddManually}>
+              Add manually
+            </button>
+            <button className="menu-option" onClick={handleGenerateSuggestions}>
+              Generate suggestions
+            </button>
+          </div>
+        )}
+      </div>
       <NodeTree
         projectId={projectId}
         space={spaceName.toLowerCase()}
-        onNodeClick={handleNodeClick}
+        onNodeClick={onHierarchyChange}
         selectedHierarchy={selectedHierarchy}
-        onNodeDeselect={handleNodeDeselect}
-        onGenerateImages={onGenerateImages} // Pass the callback to NodeTree
+        onNodeDeselect={() => onHierarchyChange(null)}
+        onGenerateImages={onGenerateImages}
       />
       <DefaultCategorySuggestions spaceName={spaceName.toLowerCase()} projectId={projectId} />
     </div>
