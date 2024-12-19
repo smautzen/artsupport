@@ -1508,7 +1508,42 @@ app.post('/addCategory', async (req, res) => {
   }
 });
 
+app.post('/addNode', async (req, res) => {
+  try {
+    const { projectId, space, categoryId, title, description } = req.body;
 
+    // Validate required parameters
+    if (!projectId || !space || !categoryId || !title || !description) {
+      return res.status(400).send({
+        error: 'Project ID, space, categoryId, title, and description are required.',
+      });
+    }
+
+    // Reference to the parent category's nodes sub-collection
+    const nodesRef = db
+      .collection('projects')
+      .doc(projectId)
+      .collection(space)
+      .doc(categoryId)
+      .collection('nodes');
+
+    // Create a new node in the sub-collection
+    const newNodeRef = nodesRef.doc(); // Automatically generate a new document ID
+    await newNodeRef.set({
+      id: newNodeRef.id, // Store the generated ID in the node document
+      title,
+      description,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log(`Node '${title}' added under category '${categoryId}' in space '${space}' for project '${projectId}'.`);
+
+    res.status(201).send({ message: 'Node added successfully.', nodeId: newNodeRef.id });
+  } catch (error) {
+    console.error('Error in /addNode:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
 
 // Start server
 app.listen(port, () => {

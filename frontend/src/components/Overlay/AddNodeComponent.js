@@ -9,9 +9,9 @@ const AddNodeComponent = ({ hierarchy, onClose, onAdd, projectId }) => {
   const [error, setError] = useState(null); // Error state
 
   // Determine the type of hierarchy (category, node, or entity)
-  const hierarchyType = !hierarchy || !hierarchy.node
+  const hierarchyType = !hierarchy || !hierarchy.category
     ? 'category'
-    : hierarchy.node && !hierarchy.childNode
+    : hierarchy.category && !hierarchy.node
     ? 'node'
     : 'entity';
 
@@ -25,20 +25,39 @@ const AddNodeComponent = ({ hierarchy, onClose, onAdd, projectId }) => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:4000/addCategory', {
-        projectId: projectId, // Replace with actual project ID
-        space: hierarchy?.space || 'conceptual', // Replace with actual space
-        title: name,
-        description,
-      });
+      let response;
 
-      console.log('Category added:', response.data);
+      console.log('Adding: ', hierarchyType);
+
+      if (hierarchyType === 'category') {
+        // Call the addCategory endpoint
+        response = await axios.post('http://localhost:4000/addCategory', {
+          projectId: projectId,
+          space: hierarchy?.space || 'conceptual', // Replace with actual space
+          title: name,
+          description,
+        });
+      } else if (hierarchyType === 'node') {
+        // Call the addNode endpoint
+        response = await axios.post('http://localhost:4000/addNode', {
+          projectId: projectId,
+          space: hierarchy?.space || 'conceptual',
+          categoryId: hierarchy.category.id, // Use the parent category ID
+          title: name,
+          description,
+        });
+      } else {
+        setError('Unsupported hierarchy type.');
+        return;
+      }
+
+      console.log(`${hierarchyType.charAt(0).toUpperCase() + hierarchyType.slice(1)} added:`, response.data);
       if (onAdd && typeof onAdd === 'function') {
         onAdd({ name, description, type: hierarchyType });
       }
       onClose(); // Close the overlay on success
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add category.');
+      setError(err.response?.data?.error || `Failed to add ${hierarchyType}.`);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
+import NewNodeComponent from './NewNodeComponent';
 
 import TextNodeComponent from './nodecomponents/TextNodeComponent';
 import ImageNodeComponent from './nodecomponents/ImageNodeComponent';
@@ -201,7 +202,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               />
             );
           case 'image':
-            return <ImageNodeComponent node={node} projectId={projectId}/>;
+            return <ImageNodeComponent node={node} projectId={projectId} />;
           case 'palette':
             return <PaletteNodeComponent node={node} />;
           default:
@@ -218,6 +219,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               </span>
             </strong>
             <img src={icon} alt={`${node.type} Icon`} className="node-icon" />
+            <NewNodeComponent
+              projectId={projectId}
+              spaceName={space}
+              category={parent}
+              node={node}
+              childNode={null} />
             {renderNodeComponent(node)}
             <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
               Explore
@@ -263,12 +270,17 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               <button className="explore-button">Get Suggestions</button>
             </div>
           )}
+          <NewNodeComponent
+            projectId={projectId}
+            spaceName={space}
+            category={category}
+            node={null}
+            childNode={null} />
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
             <div>{category.description}</div>
             <ImageNodeComponent node={category} projectId={projectId} />
-            <NodeEntitiesComponent entities={category.entities} />
             {renderNodes(category.nodes, category, null)}
           </div>
         )}
