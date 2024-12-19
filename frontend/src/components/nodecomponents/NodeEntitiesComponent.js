@@ -85,7 +85,10 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
           <div className="entity-list">
             {likedEntities.map((entity) => (
               <div key={entity.id} className="entity-box">
-                {entity.title}
+                <div className="entity-details">
+                  <strong><span>{entity.title}</span></strong>
+                  <em>{entity.description}</em>
+                </div>
               </div>
             ))}
           </div>
@@ -99,7 +102,10 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
           <div className="entity-list">
             {unlikedEntities.map((entity) => (
               <div key={entity.id} className="entity-box suggested">
-                <em>{entity.title}</em>
+                <div className="entity-details">
+                  <strong><span>{entity.title}</span></strong>
+                  <em>{entity.description}</em>
+                </div>
                 <button
                   className="like-button"
                   onClick={() => handleLikeClick(entity.id)}

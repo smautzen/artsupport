@@ -11,7 +11,7 @@
 .entity-box {
   padding: 8px 12px;
   background-color: #f0f0f0;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 14px;
   display: flex;
   justify-content: space-between;
@@ -19,10 +19,10 @@
 }
 
 .entity-box.suggested {
-  font-style: italic;
   color: #888; /* Lighter font for unliked entities */
   background-color: #fff; /* Optional: make background stand out */
-  border: 1px dashed #ccc; /* Optional: add a dashed border for distinction */
+  border: 2px dashed #ccc; /* Optional: add a dashed border for distinction */
+  border-radius: 7px;
 }
 
 .like-button {
@@ -38,4 +38,14 @@
 
 .like-button:hover {
   background-color: #0056b3;
+}
+
+.entity-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px; /* Optional: Add padding around the details */
+  font-size: 14px; /* Optional: Adjust font size */
+  line-height: 1.5; /* Optional: Add better spacing between lines */
 }
