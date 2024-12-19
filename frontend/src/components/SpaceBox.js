@@ -78,9 +78,11 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
         </button>
         {showNewCategoryMenu && (
           <div ref={menuRef} className="new-category-menu">
+            <span>Enter Category details yourself:</span>
             <button className="menu-option" onClick={handleAddManually}>
               Add manually
             </button>
+            <span>Let the AI suggest categories based on your project and directions from you:</span>
             <button className="menu-option" onClick={handleGenerateSuggestions}>
               Generate suggestions
             </button>

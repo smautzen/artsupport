@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase-config';
+import OverlayComponent from '../Overlay/OverlayComponent';
 import './ImageNodeComponent.css';
 
 const ImageNodeComponent = ({ node, projectId }) => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Fetch image data from Firestore using IDs in the node's images array
   useEffect(() => {
     const fetchImages = async () => {
       if (!node || !node.images || !Array.isArray(node.images) || node.images.length === 0) {
@@ -37,16 +37,15 @@ const ImageNodeComponent = ({ node, projectId }) => {
     fetchImages();
   }, [node, projectId]);
 
-  const handleImageClick = (uri) => {
-    setSelectedImage(uri); // Set the clicked image as the selected one
+  const handleImageClick = (image) => {
+    setSelectedImage(image);
   };
 
   const closeOverlay = () => {
-    setSelectedImage(null); // Close the overlay by resetting the state
+    setSelectedImage(null);
   };
 
   if (!images || images.length === 0) {
-    // Do not render anything if there are no images
     return null;
   }
 
@@ -60,20 +59,17 @@ const ImageNodeComponent = ({ node, projectId }) => {
             src={image.url}
             alt={image.title || 'Untitled Image'}
             className="thumbnail"
-            onClick={() => handleImageClick(image.url)} // Handle click to open overlay
+            onClick={() => handleImageClick(image)}
           />
         ))}
       </div>
 
       {selectedImage && (
-        <div className="overlay" onClick={closeOverlay}>
-          <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
-            <img src={selectedImage} alt="Full Size" className="full-image" />
-            <button className="close-button" onClick={closeOverlay}>
-              Close
-            </button>
-          </div>
-        </div>
+        <OverlayComponent
+          action="image"
+          item={selectedImage}
+          onClose={closeOverlay}
+        />
       )}
     </div>
   );
