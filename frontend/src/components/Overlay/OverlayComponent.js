@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import AddNodeComponent from './AddNodeComponent'; // Import AddNodeComponent
 import './OverlayComponent.css';
 
 const OverlayComponent = ({ action, item, onClose }) => {
-  if (!action || !item) {
+    useEffect(() => {
+        console.log('OverlayComponent rendered with:', { action, item });
+      }, [action, item]);
+      
+  
+    if (!action || !item) {
     return null;
   }
 
@@ -12,7 +18,14 @@ const OverlayComponent = ({ action, item, onClose }) => {
         return <img src={item.url} alt={item.title || 'Image'} className="full-image" />;
       case 'text':
         return <p className="text-content">{item.text}</p>;
-      // Add more cases for other subcomponents as needed
+      case 'addnode': // Add support for the AddNodeComponent
+        return (
+          <AddNodeComponent
+            hierarchy={item} // Pass the hierarchy from item
+            onClose={onClose}
+            onAdd={item.onAdd} // Pass the onAdd handler from item
+          />
+        );
       default:
         return <p>Unsupported action type: {action}</p>;
     }

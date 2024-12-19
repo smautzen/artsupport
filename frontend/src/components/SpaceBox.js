@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import OverlayComponent from './Overlay/OverlayComponent'; // Import OverlayComponent
 import './SpaceBox.css';
 import NodeTree from './NodeTree';
 import DefaultCategorySuggestions from './DefaultCategorySuggestions';
@@ -10,6 +11,7 @@ import helpIcon from '../assets/help.png';
 const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, onGenerateImages }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showNewCategoryMenu, setShowNewCategoryMenu] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false); // State to manage overlay visibility
   const menuRef = useRef();
 
   useEffect(() => {
@@ -39,14 +41,15 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
       : 'This space includes abstract ideas, themes, and emotions guiding the creative process.';
 
   const handleAddManually = () => {
-    console.log('Add manually clicked');
-    // Add functionality for manual category addition here
+    console.log('Add manually clicked'); // Debugging log
+    console.log('Selected Hierarchy:', selectedHierarchy);
+    setShowOverlay(true); // Open the overlay
     setShowNewCategoryMenu(false);
+    console.log('Show Overlay:', showOverlay);
   };
 
   const handleGenerateSuggestions = () => {
     console.log('Generate suggestions clicked');
-    // Add functionality for generating suggestions here
     setShowNewCategoryMenu(false);
   };
 
@@ -77,7 +80,7 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
           New category +
         </button>
         {showNewCategoryMenu && (
-          <div ref={menuRef} className="new-category-menu">
+          <div ref={menuRef} className="new-category-menu" onClick={(e) => e.stopPropagation()}>
             <span>Enter Category details yourself:</span>
             <button className="menu-option" onClick={handleAddManually}>
               Add manually
@@ -98,6 +101,20 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
         onGenerateImages={onGenerateImages}
       />
       <DefaultCategorySuggestions spaceName={spaceName.toLowerCase()} projectId={projectId} />
+
+      {/* Overlay for adding a node */}
+      {showOverlay && (
+        <OverlayComponent
+          action="addnode"
+          item={{
+            space: spaceName.toLowerCase(),
+            category: null,
+            node: null,
+            childNode: null
+          }}
+          onClose={() => setShowOverlay(false)} // Close the overlay
+        />
+      )}
     </div>
   );
 };
