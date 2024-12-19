@@ -46,7 +46,18 @@ const AddNodeComponent = ({ hierarchy, onClose, onAdd, projectId }) => {
           title: name,
           description,
         });
-      } else {
+      } else if (hierarchyType === 'entity') {
+        // Call the addNode endpoint
+        response = await axios.post('http://localhost:4000/addEntity', {
+          projectId: projectId,
+          space: hierarchy?.space || 'conceptual',
+          categoryId: hierarchy.category.id, // Use the parent category ID
+          nodeId: hierarchy.node.id, // Use the parent category ID
+          title: name,
+          description,
+        });
+      }
+       else {
         setError('Unsupported hierarchy type.');
         return;
       }

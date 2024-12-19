@@ -1533,6 +1533,7 @@ app.post('/addNode', async (req, res) => {
       id: newNodeRef.id, // Store the generated ID in the node document
       title,
       description,
+      type: 'text',
       createdAt: new Date().toISOString(),
     });
 
@@ -1544,6 +1545,67 @@ app.post('/addNode', async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
+
+app.post('/addEntity', async (req, res) => {
+  try {
+    const { projectId, space, categoryId, nodeId, title, description } = req.body;
+
+    // Validate required parameters
+    if (!projectId || !space || !categoryId || !nodeId || !title || !description) {
+      return res.status(400).send({
+        error: 'Project ID, space, categoryId, nodeId, title, and description are required.',
+      });
+    }
+
+    // Reference to the node document in Firestore
+    const nodeRef = db
+      .collection('projects')
+      .doc(projectId)
+      .collection(space)
+      .doc(categoryId)
+      .collection('nodes')
+      .doc(nodeId);
+
+    const nodeDoc = await nodeRef.get();
+
+    // Check if the node exists
+    if (!nodeDoc.exists) {
+      return res.status(404).send({ error: 'Node not found.' });
+    }
+
+    // Generate a unique ID for the new entity
+    const entityId = uuidv4();
+
+    // Reference to the entities collection for the project
+    const entityRef = db.collection('projects').doc(projectId).collection('entities').doc(entityId);
+
+    // Create the new entity document in the entities collection
+    await entityRef.set({
+      id: entityId,
+      title,
+      description,
+      type: 'entity',
+      liked: true, // Default to not liked
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log(`Entity '${title}' created in the entities collection with ID '${entityId}'.`);
+
+    // Update the node's entities array with the new entity ID
+    await nodeRef.update({
+      entities: admin.firestore.FieldValue.arrayUnion(entityId),
+    });
+
+    console.log(`Entity ID '${entityId}' added to node '${nodeId}' under category '${categoryId}' in space '${space}' for project '${projectId}'.`);
+
+    res.status(201).send({ message: 'Entity added successfully.', entityId });
+  } catch (error) {
+    console.error('Error in /addEntity:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+
 
 // Start server
 app.listen(port, () => {
