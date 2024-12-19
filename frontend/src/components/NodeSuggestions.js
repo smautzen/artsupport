@@ -63,6 +63,7 @@ const NodeSuggestions = ({ item, index, handleLike, projectId }) => {
         liked={item.liked}
         index={index}
         space={item.space}
+        categoryId={item.id}
       />
 
       <div className="item-description">
@@ -81,24 +82,26 @@ const NodeSuggestions = ({ item, index, handleLike, projectId }) => {
                 liked={node.liked}
                 index={index}
                 space={item.space}
+                nodeId={node.id}
+                categoryId={item.id}
               />
 
               <div className="node-suggestion-content">
-              <div className="node-section">
-                <div className="section-header">Node description:</div>
-                <div className="section-content">
-                  {node.description || 'No description available'}
-                </div>
-              </div>
-
-              {node.entities && node.entities.length > 0 && (
                 <div className="node-section">
-                  <div className="section-header">Examples of entities:</div>
-                  <div className="section-content entity-list">
-                    {formatEntities(node.entities)}
+                  <div className="section-header">Node description:</div>
+                  <div className="section-content">
+                    {node.description || 'No description available'}
                   </div>
                 </div>
-              )}
+
+                {node.entities && node.entities.length > 0 && (
+                  <div className="node-section">
+                    <div className="section-header">Examples of entities:</div>
+                    <div className="section-content entity-list">
+                      {formatEntities(node.entities)}
+                    </div>
+                  </div>
+                )}
               </div>
             </li>
           ))}
