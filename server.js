@@ -1471,6 +1471,44 @@ app.post('/likeDefaultSuggestion', async (req, res) => {
   }
 });
 
+app.post('/addCategory', async (req, res) => {
+  try {
+    const { projectId, space, title, description } = req.body;
+
+    // Validate required parameters
+    if (!projectId || !space || !title || !description) {
+      return res.status(400).send({ error: 'Project ID, space, title, and description are required.' });
+    }
+
+    // Reference to the space collection in Firestore
+    const spaceRef = db.collection('projects').doc(projectId).collection(space);
+
+    // Check if the category already exists
+    const categorySnapshot = await spaceRef.where('title', '==', title).get();
+
+    if (!categorySnapshot.empty) {
+      return res.status(400).send({ error: 'Category with this title already exists in the specified space.' });
+    }
+
+    // Add the new category
+    await spaceRef.add({
+      title,
+      description,
+      type: 'category',
+      liked: true,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log(`Category '${title}' added to space '${space}' in project '${projectId}'.`);
+
+    res.status(201).send({ message: 'Category added successfully.' });
+  } catch (error) {
+    console.error('Error in /addCategory:', error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+
 
 // Start server
 app.listen(port, () => {

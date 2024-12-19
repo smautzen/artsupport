@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import './AddNodeComponent.css';
 
-const AddNodeComponent = ({ hierarchy, onClose, onAdd }) => {
+const AddNodeComponent = ({ hierarchy, onClose, onAdd, projectId }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false); // Loading state for the button
+  const [error, setError] = useState(null); // Error state
 
   // Determine the type of hierarchy (category, node, or entity)
   const hierarchyType = !hierarchy || !hierarchy.node
@@ -12,17 +15,39 @@ const AddNodeComponent = ({ hierarchy, onClose, onAdd }) => {
     ? 'node'
     : 'entity';
 
-  const handleAdd = () => {
-    if (onAdd && typeof onAdd === 'function') {
-      onAdd({ hierarchy, name, description, type: hierarchyType });
+  const handleAdd = async () => {
+    if (!name || !description) {
+      setError('Name and description are required.');
+      return;
     }
-    setName('');
-    setDescription('');
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.post('http://localhost:4000/addCategory', {
+        projectId: projectId, // Replace with actual project ID
+        space: hierarchy?.space || 'conceptual', // Replace with actual space
+        title: name,
+        description,
+      });
+
+      console.log('Category added:', response.data);
+      if (onAdd && typeof onAdd === 'function') {
+        onAdd({ name, description, type: hierarchyType });
+      }
+      onClose(); // Close the overlay on success
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to add category.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="add-node">
       <h3>Add {hierarchyType}</h3>
+      {error && <p className="error-message">{error}</p>}
       <div className="input-group">
         <label htmlFor="name">Name:</label>
         <input
@@ -43,10 +68,10 @@ const AddNodeComponent = ({ hierarchy, onClose, onAdd }) => {
         ></textarea>
       </div>
       <div className="button-group">
-        <button className="add-button" onClick={handleAdd}>
-          Add
+        <button className="add-button" onClick={handleAdd} disabled={loading}>
+          {loading ? 'Adding...' : 'Add'}
         </button>
-        <button className="close-button" onClick={onClose}>
+        <button className="close-button" onClick={onClose} disabled={loading}>
           Close
         </button>
       </div>

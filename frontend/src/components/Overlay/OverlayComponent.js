@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import AddNodeComponent from './AddNodeComponent'; // Import AddNodeComponent
 import './OverlayComponent.css';
 
-const OverlayComponent = ({ action, item, onClose }) => {
+const OverlayComponent = ({ action, item, projectId, onClose }) => {
     useEffect(() => {
         console.log('OverlayComponent rendered with:', { action, item });
       }, [action, item]);
@@ -23,6 +23,7 @@ const OverlayComponent = ({ action, item, onClose }) => {
           <AddNodeComponent
             hierarchy={item} // Pass the hierarchy from item
             onClose={onClose}
+            projectId={projectId}
             onAdd={item.onAdd} // Pass the onAdd handler from item
           />
         );

@@ -106,6 +106,7 @@ const SpaceBox = ({ projectId, spaceName, onHierarchyChange, selectedHierarchy, 
       {showOverlay && (
         <OverlayComponent
           action="addnode"
+          projectId={projectId}
           item={{
             space: spaceName.toLowerCase(),
             category: null,
