@@ -55,6 +55,12 @@
     border-color: #28a745;
     cursor: not-allowed;
   }
+
+  .suggestions-description {
+    font-size: 0.9em;
+    color: #555;
+    padding-bottom: 5px;
+  }
   
   @keyframes glide-left {
     0% {

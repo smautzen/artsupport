@@ -1,3 +1,10 @@
+.suggestion {
+  border: #7a7a7a 2px solid;
+  border-radius: 5px;
+  background-color: #dce1f5;
+  margin-top: 10px;
+}
+
 .suggestion ul {
   list-style: none; /* Remove bullets */
   padding: 0;
@@ -5,17 +12,27 @@
 }
 
 .node-item {
+  margin: 8px;
   display: flex; /* Make the container a flexbox */
   flex-direction: column; /* Stack children vertically */
   gap: 10px; /* Space between vertical elements */
   margin-bottom: 15px; /* Space between nodes */
   align-items: flex-start; /* Align all items to the left */
   text-align: left; /* Ensure text aligns to the left */
+  border: #7a7a7a 1px solid !important;
+  padding: 0 !important;
 }
 
 .node-title,
 .node-section {
   width: 100%; /* Make each section span the full width */
+}
+
+.item-description {
+  display: flex; /* Make the container a flexbox */
+  flex-direction: column; /* Stack children vertically */
+  padding-left: 5px;
+  gap: 10px; /* Space between child elements */
 }
 
 .section-header {
@@ -25,9 +42,14 @@
 
 .section-content {
   margin-left: 10px;
+  margin-bottom: 10px;
 }
 
 .entity-list {
   font-size: 0.9em;
   color: #555;
+}
+
+.node-suggestion-content {
+  padding: 8px;
 }

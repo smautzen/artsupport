@@ -66,6 +66,7 @@ const NodeSuggestions = ({ item, index, handleLike, projectId }) => {
       />
 
       <div className="item-description">
+        <strong><span>Category description:</span></strong>
         {item.description || 'No description available'}
       </div>
 
@@ -82,8 +83,9 @@ const NodeSuggestions = ({ item, index, handleLike, projectId }) => {
                 space={item.space}
               />
 
+              <div className="node-suggestion-content">
               <div className="node-section">
-                <div className="section-header">Description:</div>
+                <div className="section-header">Node description:</div>
                 <div className="section-content">
                   {node.description || 'No description available'}
                 </div>
@@ -97,6 +99,7 @@ const NodeSuggestions = ({ item, index, handleLike, projectId }) => {
                   </div>
                 </div>
               )}
+              </div>
             </li>
           ))}
       </ul>

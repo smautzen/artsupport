@@ -227,6 +227,7 @@ const SystemMessage = ({ action, payload, projectId, messageId }) => {
   return (
     <div className="system-message">
       <h4>Suggestions:</h4>
+      <span className="suggestions-description">Below are suggestions that might benefit your project. Press the "Like" button to add any of them to your project spaces - you can manually add content to them later.</span>
       {animations.map((animation) => (
         <div
           key={animation.id}
