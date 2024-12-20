@@ -34,6 +34,7 @@ const ProjectDetailsPage = () => {
   };
 
   const closeOverlay = () => {
+    console.log("Close overlay invoked...")
     setOverlayData(null);
     setShowOverlay(false);
   };

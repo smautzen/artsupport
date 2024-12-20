@@ -28,6 +28,8 @@ const ImageGeneration = ({ projectId, attachedHierarchy, onClose }) => {
       enhancePrompt, // Use the updated parameter
     };
 
+    onClose();
+
     try {
       console.log("Final payload being sent to server:", payload);
 
@@ -37,7 +39,6 @@ const ImageGeneration = ({ projectId, attachedHierarchy, onClose }) => {
       );
       console.log("Response from server:", response);
 
-      onClose(); // Close the overlay after generating images
     } catch (error) {
       console.error("Error generating images:", error);
     }
