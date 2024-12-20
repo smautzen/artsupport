@@ -20,6 +20,7 @@ const OverlayComponent = ({ action, item, projectId, onClose }) => {
         return (<ImageGeneration
           projectId={projectId}
           attachedHierarchy={item || null}
+          onClose={onClose} // Pass onClose to ImageGeneration
         />);
       case 'text':
         return <p className="text-content">{item.text}</p>;

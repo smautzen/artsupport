@@ -3,7 +3,7 @@ import axios from 'axios';
 
 import "./ImageGeneration.css";
 
-const ImageGeneration = ({ projectId, attachedHierarchy }) => {
+const ImageGeneration = ({ projectId, attachedHierarchy, onClose }) => {
   const [prompt, setPrompt] = useState("");
   const [imageCount, setImageCount] = useState(1);
 
@@ -12,11 +12,6 @@ const ImageGeneration = ({ projectId, attachedHierarchy }) => {
       console.error("Prompt is required to generate images.");
       return;
     }
-
-    console.log("Generating images with the following data:");
-    console.log("Prompt:", prompt);
-    console.log("Image Count:", imageCount);
-    console.log("Attached Nodes:", attachedHierarchy);
 
     // Call the generateImages function passed down from the ChatBox
     generateImages({
@@ -36,9 +31,13 @@ const ImageGeneration = ({ projectId, attachedHierarchy }) => {
       };
 
       console.log('Final payload being sent to server:', payload);
+      
+      onClose(); // Close the overlay after generating images
 
       const response = await axios.post('http://localhost:4000/generate-image', payload);
       console.log('Response from server:', response);
+
+
     } catch (error) {
       console.error('Error generating images:', error);
     }
