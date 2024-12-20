@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import axios from 'axios';
+
 import "./ImageGeneration.css";
 
-const ImageGeneration = ({ attachedNodes, generateImages }) => {
+const ImageGeneration = ({ projectId, attachedHierarchy }) => {
   const [prompt, setPrompt] = useState("");
   const [imageCount, setImageCount] = useState(1);
 
@@ -14,14 +16,32 @@ const ImageGeneration = ({ attachedNodes, generateImages }) => {
     console.log("Generating images with the following data:");
     console.log("Prompt:", prompt);
     console.log("Image Count:", imageCount);
-    console.log("Attached Nodes:", attachedNodes);
+    console.log("Attached Nodes:", attachedHierarchy);
 
     // Call the generateImages function passed down from the ChatBox
     generateImages({
       prompt,
       n: imageCount,
-      attachedNodes,
+      attachedHierarchy,
     });
+  };
+
+  const generateImages = async ({ prompt, n }) => {
+    try {
+      const payload = {
+        projectId,
+        prompt,
+        n,
+        attachedHierarchy: attachedHierarchy || null, // Pass the full hierarchy
+      };
+
+      console.log('Final payload being sent to server:', payload);
+
+      const response = await axios.post('http://localhost:4000/generate-image', payload);
+      console.log('Response from server:', response);
+    } catch (error) {
+      console.error('Error generating images:', error);
+    }
   };
 
   return (

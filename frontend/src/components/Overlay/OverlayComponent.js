@@ -1,21 +1,26 @@
 import React, { useEffect } from 'react';
 import AddNodeComponent from './AddNodeComponent'; // Import AddNodeComponent
+import ImageGeneration from './ImageGeneration';
+
 import './OverlayComponent.css';
 
 const OverlayComponent = ({ action, item, projectId, onClose }) => {
-    useEffect(() => {
-        console.log('OverlayComponent rendered with:', { action, item });
-      }, [action, item]);
-      
-  
-    if (!action || !item) {
+  useEffect(() => {
+    console.log('OverlayComponent rendered with:', { action, item });
+  }, [action, item]);
+
+
+  if (!action) {
     return null;
   }
 
   const renderContent = () => {
     switch (action) {
       case 'image':
-        return <img src={item.url} alt={item.title || 'Image'} className="full-image" />;
+        return (<ImageGeneration
+          projectId={projectId}
+          attachedHierarchy={item || null}
+        />);
       case 'text':
         return <p className="text-content">{item.text}</p>;
       case 'addnode': // Add support for the AddNodeComponent

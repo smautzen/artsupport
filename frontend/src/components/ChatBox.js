@@ -4,8 +4,8 @@ import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import './ChatBox.css';
 import SystemMessage from './SystemMessage';
 import UserMessage from './UserMessage';
-import ImageGeneration from './ImageGeneration';
 import NodesContainer from './NodesContainer';
+import OverlayComponent from './Overlay/OverlayComponent';
 
 import chatIcon from '../assets/chat.png';
 import helpIcon from '../assets/help.png';
@@ -16,8 +16,10 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
   const [selectedHierarchy, setSelectedHierarchy] = useState(null);
-  const [showImageGeneration, setShowImageGeneration] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false); // Tooltip state
+  const [showOverlay, setShowOverlay] = useState(false); // Overlay visibility
+  const [overlayData, setOverlayData] = useState(null); // Data for overlay
+
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
@@ -126,33 +128,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
-  const generateImages = async ({ prompt, n }) => {
-    console.log('Preparing to generate images with the following details:');
-    console.log('Project ID:', projectId);
-    console.log('Prompt:', prompt);
-    console.log('Number of Images:', n);
-    console.log('Attached Hierarchy:', selectedHierarchy);
-
-    try {
-      const payload = {
-        projectId,
-        prompt,
-        n,
-        attachedHierarchy: selectedHierarchy, // Pass the full hierarchy
-      };
-
-      removeHierarchy();
-      toggleImageGeneration();
-
-      console.log('Final payload being sent to server:', payload);
-
-      const response = await axios.post('http://localhost:4000/generate-image', payload);
-      console.log('Response from server:', response);
-    } catch (error) {
-      console.error('Error generating images:', error);
-    }
-  };
-
   const addHierarchy = (hierarchy) => {
     setSelectedHierarchy(hierarchy);
   };
@@ -164,15 +139,25 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
+  const openImageGenerationOverlay = () => {
+    console.log('Opening overlay with hierarchy:', selectedHierarchy);
+    setOverlayData({
+      action: 'image',
+      item: selectedHierarchy,
+      projectId,
+    });
+    setShowOverlay(true);
+  };
+
+  const closeOverlay = () => {
+    setShowOverlay(false);
+    setOverlayData(null);
+  };
+
   useImperativeHandle(ref, () => ({
     addHierarchy,
-    generateImages,
-    toggleImageGeneration: () => setShowImageGeneration(true),
+    toggleImageGeneration: openImageGenerationOverlay,
   }));
-
-  const toggleImageGeneration = () => {
-    setShowImageGeneration((prev) => !prev);
-  };
 
   return (
     <div className="chatbox">
@@ -241,25 +226,12 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       <div className="action-div">
         <div className="side-by-side">
           <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
-          {showImageGeneration && (
-            <div className="image-generation-wrapper">
-              <button className="close-btn" onClick={toggleImageGeneration}>
-                x
-              </button>
-              <ImageGeneration
-                attachedHierarchy={selectedHierarchy}
-                generateImages={generateImages}
-              />
-            </div>
-          )}
         </div>
-        {!showImageGeneration && (
-          <button className="generate-images-btn" onClick={toggleImageGeneration}>
-            Generate Images
-          </button>
-        )}
+        <button className="generate-images-btn" onClick={openImageGenerationOverlay}>
+          Generate Images
+        </button>
       </div>
-      <div className={`chatbox-input ${showImageGeneration ? 'disabled' : ''}`}>
+      <div className={`chatbox-input ${showOverlay ? 'disabled' : ''}`}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -270,15 +242,24 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
             }
           }}
           placeholder="Type your message..."
-          disabled={showImageGeneration}
+          disabled={showOverlay}
         />
-        <button onClick={sendMessage} disabled={showImageGeneration}>
+        <button onClick={sendMessage} disabled={showOverlay}>
           Send
         </button>
-        <button onClick={sendTestMessage} disabled={showImageGeneration}>
+        <button onClick={sendTestMessage} disabled={showOverlay}>
           Send test message
         </button>
       </div>
+
+      {showOverlay && (
+        <OverlayComponent
+          action={overlayData.action}
+          item={overlayData.item || null}
+          projectId={overlayData.projectId}
+          onClose={closeOverlay}
+        />
+      )}
     </div>
   );
 });
