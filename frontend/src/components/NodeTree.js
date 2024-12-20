@@ -26,10 +26,8 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
   const [collapsedItems, setCollapsedItems] = useState({});
   const [animations, setAnimations] = useState([]);
   const [error, setError] = useState(null);
-  const [activePopup, setActivePopup] = useState(null);
 
   const treeContainerRef = useRef();
-  const popupRef = useRef();
 
   useEffect(() => {
     if (!projectId || !space) {
@@ -110,20 +108,6 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     fetchTreeData();
   }, [projectId, space]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        setActivePopup(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   const constructHierarchy = (node, parent, grandparent) => {
     return {
       space,
@@ -164,19 +148,10 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     }
   };
 
-  const handleExploreClick = (node, parent, grandparent) => {
-    const hierarchy = constructHierarchy(node, parent, grandparent);
-
-    console.log('NodeTree: handleExploreClick constructed hierarchy:', hierarchy);
-
-    setActivePopup((prev) => (prev === node.id ? null : node.id));
-  };
-
   const handleGenerateImagesClick = (node, parent, grandparent) => {
     const hierarchy = constructHierarchy(node, parent, grandparent);
     onNodeClick(hierarchy); // Notify the parent about the node click
     onGenerateImages(hierarchy)
-    setActivePopup((prev) => (prev === node.id ? null : node.id));
   };
 
   const toggleCollapse = (id) => {
@@ -225,21 +200,10 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               category={parent}
               node={node}
               childNode={null} />
-            {renderNodeComponent(node)}
-            <button className="explore-button" onClick={() => handleExploreClick(node, parent, grandparent)}>
-              Explore
+            <button className="explore-button" onClick={() => handleGenerateImagesClick(node, parent, grandparent)}>
+              Generate Images
             </button>
-            {activePopup === node.id && (
-              <div ref={popupRef} className="explore-options-popup">
-                <button
-                  className="explore-button"
-                  onClick={() => handleGenerateImagesClick(node, parent, grandparent)} // Trigger the image generation callback
-                >
-                  Generate Images
-                </button>
-                <button className="explore-button">Get Suggestions</button>
-              </div>
-            )}
+            {renderNodeComponent(node)}
           </div>
           {!collapsedItems[node.id] && node.childNodes && node.childNodes.length > 0 && (
             <div className="node-children">{renderNodes(node.childNodes, node, parent)}</div>
@@ -256,20 +220,9 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             {category.title}
           </span>
           <img src={categoryIcon} alt="Category Icon" className="node-icon" />
-          <button className="explore-button" onClick={() => handleExploreClick(category, null, null)}>
-            Explore
+          <button className="explore-button" onClick={() => handleGenerateImagesClick(category, null, null)}>
+            Generate Images
           </button>
-          {activePopup === category.id && (
-            <div ref={popupRef} className="explore-options-popup">
-              <button
-                className="explore-button"
-                onClick={() => handleGenerateImagesClick(category, null, null)} // Trigger the image generation callback
-              >
-                Generate Images
-              </button>
-              <button className="explore-button">Get Suggestions</button>
-            </div>
-          )}
           <NewNodeComponent
             projectId={projectId}
             spaceName={space}
