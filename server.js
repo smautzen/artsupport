@@ -38,6 +38,24 @@ app.use((req, res, next) => {
   next();
 });
 
+const setCurrentAction = async (projectId, currentAction) => {
+  if (!projectId || typeof currentAction !== 'string') {
+    throw new Error('Project ID and a valid currentAction string are required.');
+  }
+
+  try {
+    const projectRef = db.collection('projects').doc(projectId);
+
+    // Update the currentAction field in Firestore
+    await projectRef.update({ currentAction });
+
+    console.log(`Current action for project ${projectId} updated to: ${currentAction}`);
+  } catch (error) {
+    console.error(`Failed to update currentAction for project ${projectId}:`, error);
+    throw new Error('Failed to update currentAction.');
+  }
+};
+
 app.post('/projects', async (req, res) => {
   try {
     const { name, description, includeSampleData } = req.body;
@@ -65,6 +83,7 @@ app.post('/projects', async (req, res) => {
       name,
       description,
       createdAt: new Date().toISOString(),
+      currentAction: '',
       overarchingElements: overarchingElementsData.overarchingElements, // Adding the elements here
     });
 
@@ -217,6 +236,8 @@ app.post('/chat', async (req, res) => {
 
     console.log('Received payload:', { projectId, message, hierarchy });
 
+    await setCurrentAction(projectId, 'Generating AI response');
+
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
@@ -316,7 +337,7 @@ app.post('/chat', async (req, res) => {
                   return entityId;
                 })
               );
-    
+
               return {
                 id: uuidv4(),
                 title: node.title,
@@ -328,7 +349,7 @@ app.post('/chat', async (req, res) => {
               };
             })
           );
-    
+
           return {
             id: suggestion.id,
             title: suggestion.title,
@@ -341,7 +362,7 @@ app.post('/chat', async (req, res) => {
           };
         })
       );
-    
+
       // Save system message
       await chatCollectionRef.add({
         messageType: 'system',
@@ -350,13 +371,13 @@ app.post('/chat', async (req, res) => {
         action: assistantResponse.action,
         suggestions,
       });
-    
+
       res.status(201).send({
         messageId: userMessageRef.id,
         suggestions,
       });
     }
-     else {
+    else {
       res.status(400).send({ error: 'Unsupported action type in assistant response.' });
     }
   } catch (error) {
@@ -369,9 +390,14 @@ app.post('/testchat', async (req, res) => {
   try {
     const { projectId, message, hierarchy } = req.body;
 
+    await setCurrentAction(projectId, 'Generating test response');
+
     if (!projectId || !message) {
       return res.status(400).send({ error: 'Project ID and message are required.' });
     }
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 
     const chatCollectionRef = db.collection('projects').doc(projectId).collection('chat');
     const entitiesCollectionRef = db.collection('projects').doc(projectId).collection('entities');
@@ -382,6 +408,9 @@ app.post('/testchat', async (req, res) => {
       timestamp: new Date().toISOString(),
       hierarchy: hierarchy || null, // Save the full hierarchy
     });
+
+    // Simulate a 5-second delay
+    await sleep(50000);
 
     // If a certain category/node is being explored
     if (hierarchy) {
@@ -1326,8 +1355,11 @@ app.post('/generate-image', async (req, res) => {
 
     // Step 2: Enhance prompt (if requested)
     if (enhancePrompt) {
+      await setCurrentAction(projectId, 'Enhancing prompt with AI');
       prompt = await enhancePrompt(prompt, projectId, attachedHierarchy);
     }
+
+    await setCurrentAction(projectId, 'Generating image');
 
     // Step 2: Generate images using OpenAI API
     console.log('Generating images from OpenAI with prompt:', prompt);

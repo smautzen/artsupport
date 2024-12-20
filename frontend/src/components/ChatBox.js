@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, collection } from 'firebase/firestore';
 import './ChatBox.css';
 import SystemMessage from './SystemMessage';
 import UserMessage from './UserMessage';
@@ -15,6 +15,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGen
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
+  const [currentAction, setCurrentAction] = useState(''); // Store currentAction from Firestore
   const [selectedHierarchy, setSelectedHierarchy] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
@@ -23,6 +24,22 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGen
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
+  // Fetch currentAction from Firestore
+  useEffect(() => {
+    if (!projectId) return;
+
+    const actionDocRef = doc(db, 'projects', projectId);
+
+    const unsubscribe = onSnapshot(actionDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setCurrentAction(docSnapshot.data()?.currentAction || '');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [db, projectId]);
+
+  // Handle animated dots
   useEffect(() => {
     let interval;
     if (loading) {
@@ -35,6 +52,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGen
     return () => clearInterval(interval);
   }, [loading]);
 
+  // Fetch chat messages
   useEffect(() => {
     if (!projectId) return;
 
@@ -151,7 +169,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGen
 
   useImperativeHandle(ref, () => ({
     addHierarchy,
-    removeHierarchy, // Ensure this function is available for ProjectDetailsPage
+    removeHierarchy,
     toggleImageGeneration: () => {
       setOverlayData({
         action: 'image',
@@ -217,8 +235,8 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGen
           </div>
         ))}
         <div className={`chat-message loading ${loading ? 'visible' : ''}`}>
-          <div style={{ width: '3ch', textAlign: 'left', overflow: 'hidden' }}>
-            {dots || '\u00A0'}
+          <div style={{ width: '250px', textAlign: 'left', overflow: 'hidden' }}>
+            {currentAction ? `${currentAction}${dots}` : '\u00A0'}
           </div>
         </div>
         <div ref={messagesEndRef} />
