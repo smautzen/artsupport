@@ -1302,7 +1302,7 @@ const getPriorities = async (projectId) => {
 
 app.post('/generate-image', async (req, res) => {
   try {
-    const { projectId, prompt, n, attachedHierarchy } = req.body;
+    const { projectId, prompt, n, attachedHierarchy, enhancePrompt } = req.body;
 
     console.log('Received image generation request:', { projectId, prompt, n, attachedHierarchy });
 
@@ -1323,6 +1323,11 @@ app.post('/generate-image', async (req, res) => {
 
     const userMessageId = userMessageRef.id;
     console.log('User message created in Firestore with ID:', userMessageId);
+
+    // Step 2: Enhance prompt (if requested)
+    if (enhancePrompt) {
+      prompt = await enhancePrompt(prompt, projectId, attachedHierarchy);
+    }
 
     // Step 2: Generate images using OpenAI API
     console.log('Generating images from OpenAI with prompt:', prompt);
@@ -1417,6 +1422,15 @@ app.post('/generate-image', async (req, res) => {
     res.status(500).send({ error: 'Failed to generate images.' });
   }
 });
+
+const enhancePrompt = async (prompt, projectId, attachedHierarchy) => {
+  // TODO: Create an assistant method for enhancing the prompt. 
+  // Take into account if the user provided additional instructions (prompt)
+  // Otherwise, find a way to use the attachedHierarchy (use firestore operations to get nodes etc)
+  // Perhaps fetch the ontology as well and use this.
+  // Perhaps put special emphasis on artistic vision (We should in general try to get the user to fill out this and medium)
+  return prompt;
+}
 
 
 app.post('/likeDefaultSuggestion', async (req, res) => {
