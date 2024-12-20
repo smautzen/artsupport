@@ -10,20 +10,19 @@ import OverlayComponent from './Overlay/OverlayComponent';
 import chatIcon from '../assets/chat.png';
 import helpIcon from '../assets/help.png';
 
-const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
+const ChatBox = forwardRef(({ projectId, onNodeDeselect, selectedNodeForImageGeneration }, ref) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState('');
   const [selectedHierarchy, setSelectedHierarchy] = useState(null);
-  const [showTooltip, setShowTooltip] = useState(false); // Tooltip state
-  const [showOverlay, setShowOverlay] = useState(false); // Overlay visibility
-  const [overlayData, setOverlayData] = useState(null); // Data for overlay
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayData, setOverlayData] = useState(null);
 
   const db = getFirestore();
   const messagesEndRef = useRef(null);
 
-  // Animate dots when loading
   useEffect(() => {
     let interval;
     if (loading) {
@@ -33,7 +32,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     } else {
       setDots('');
     }
-
     return () => clearInterval(interval);
   }, [loading]);
 
@@ -63,11 +61,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       const latestMessage = sortedMessages[sortedMessages.length - 1];
 
       if (latestMessage) {
-        if (latestMessage.messageType === 'user') {
-          setLoading(true);
-        } else if (latestMessage.messageType === 'system') {
-          setLoading(false);
-        }
+        setLoading(latestMessage.messageType === 'user');
       } else {
         setLoading(false);
       }
@@ -81,6 +75,17 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (selectedNodeForImageGeneration) {
+      setOverlayData({
+        action: 'image',
+        item: selectedNodeForImageGeneration,
+        projectId,
+      });
+      setShowOverlay(true);
+    }
+  }, [selectedNodeForImageGeneration, projectId]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -139,16 +144,6 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
     }
   };
 
-  const openImageGenerationOverlay = () => {
-    console.log('Opening overlay with hierarchy:', selectedHierarchy);
-    setOverlayData({
-      action: 'image',
-      item: selectedHierarchy,
-      projectId,
-    });
-    setShowOverlay(true);
-  };
-
   const closeOverlay = () => {
     setShowOverlay(false);
     setOverlayData(null);
@@ -156,7 +151,15 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
 
   useImperativeHandle(ref, () => ({
     addHierarchy,
-    toggleImageGeneration: openImageGenerationOverlay,
+    removeHierarchy, // Ensure this function is available for ProjectDetailsPage
+    toggleImageGeneration: () => {
+      setOverlayData({
+        action: 'image',
+        item: selectedHierarchy,
+        projectId,
+      });
+      setShowOverlay(true);
+    },
   }));
 
   return (
@@ -185,7 +188,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         )}
       </div>
       <div className="chatbox-messages">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div key={msg.id} className={`chat-message ${msg.messageType}`}>
             {msg.messageType === 'user' ? (
               <UserMessage
@@ -196,9 +199,7 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
             ) : msg.messageType === 'system' ? (
               <>
                 {msg.timestamp && (
-                  <div className="timestamp">
-                    {new Date(msg.timestamp).toLocaleString()}
-                  </div>
+                  <div className="timestamp">{new Date(msg.timestamp).toLocaleString()}</div>
                 )}
                 <div className="system-response-text">{msg.content}</div>
                 {msg.action && (
@@ -227,7 +228,13 @@ const ChatBox = forwardRef(({ projectId, onNodeDeselect }, ref) => {
         <div className="side-by-side">
           <NodesContainer selectedHierarchy={selectedHierarchy} onRemoveNode={removeHierarchy} />
         </div>
-        <button className="generate-images-btn" onClick={openImageGenerationOverlay}>
+        <button
+          className="generate-images-btn"
+          onClick={() => {
+            setOverlayData({ action: 'image', item: null, projectId });
+            setShowOverlay(true);
+          }}
+        >
           Generate Images
         </button>
       </div>

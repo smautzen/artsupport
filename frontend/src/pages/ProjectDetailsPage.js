@@ -2,13 +2,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import SpaceBox from '../components/SpaceBox';
 import ChatBox from '../components/ChatBox';
+import OverlayComponent from '../components/Overlay/OverlayComponent';
 import './ProjectDetailsPage.css';
 
 const ProjectDetailsPage = () => {
   const { projectId } = useParams();
-  const chatBoxRef = useRef(null); // Reference to the ChatBox
-  const [selectedHierarchy, setSelectedHierarchy] = useState(null); // Track the selected hierarchy
-  const [selectedNodeForImageGeneration, setSelectedNodeForImageGeneration] = useState(null); // Track node for image generation
+  const chatBoxRef = useRef(null);
+  const [selectedHierarchy, setSelectedHierarchy] = useState(null); // Track general hierarchy for ChatBox
+  const [overlayData, setOverlayData] = useState(null); // For overlay content
+  const [showOverlay, setShowOverlay] = useState(false); // Overlay visibility
 
   const handleHierarchyChange = (hierarchy) => {
     setSelectedHierarchy(hierarchy);
@@ -26,18 +28,21 @@ const ProjectDetailsPage = () => {
     }
   };
 
-  const handleGenerateImages = (node) => {
-    console.log('Node: ', node)
-    setSelectedHierarchy(node);
-    setSelectedNodeForImageGeneration(node); // Set the node for image generation
+  const handleGenerateImages = (hierarchy) => {
+    setOverlayData({ action: 'image', item: hierarchy, projectId });
+    setShowOverlay(true);
+  };
+
+  const closeOverlay = () => {
+    setOverlayData(null);
+    setShowOverlay(false);
   };
 
   useEffect(() => {
-    if (selectedNodeForImageGeneration && chatBoxRef.current) {
-      chatBoxRef.current.addHierarchy(selectedNodeForImageGeneration);
-      chatBoxRef.current.toggleImageGeneration(); // Open the image generation UI
+    if (!selectedHierarchy && chatBoxRef.current) {
+      chatBoxRef.current.removeHierarchy(); // Ensure consistency if no hierarchy is selected
     }
-  }, [selectedNodeForImageGeneration]);
+  }, [selectedHierarchy]);
 
   return (
     <div style={{ display: 'flex', gap: '1rem', padding: '20px', height: '90vh' }}>
@@ -47,14 +52,15 @@ const ProjectDetailsPage = () => {
           spaceName="Material"
           onHierarchyChange={handleHierarchyChange}
           selectedHierarchy={selectedHierarchy}
-          onGenerateImages={handleGenerateImages} // Pass the callback
+          onGenerateImages={handleGenerateImages}
         />
       </div>
       <div style={{ flex: 2 }}>
         <ChatBox
           ref={chatBoxRef}
           projectId={projectId}
-          selectedNodeForImageGeneration={selectedNodeForImageGeneration} // Pass the node
+          selectedHierarchy={selectedHierarchy} // Pass general hierarchy to ChatBox
+          onGenerateImages={() => handleGenerateImages(null)} // Open with null hierarchy from ChatBox
         />
       </div>
       <div style={{ flex: 1 }}>
@@ -63,9 +69,18 @@ const ProjectDetailsPage = () => {
           spaceName="Conceptual"
           onHierarchyChange={handleHierarchyChange}
           selectedHierarchy={selectedHierarchy}
-          onGenerateImages={handleGenerateImages} // Pass the callback
+          onGenerateImages={handleGenerateImages}
         />
       </div>
+
+      {showOverlay && (
+        <OverlayComponent
+          action={overlayData.action}
+          item={overlayData.item}
+          projectId={overlayData.projectId}
+          onClose={closeOverlay}
+        />
+      )}
     </div>
   );
 };

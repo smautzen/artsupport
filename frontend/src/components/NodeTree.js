@@ -3,7 +3,6 @@ import { db } from '../firebase/firebase-config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import './NodeTree.css';
 import NewNodeComponent from './NewNodeComponent';
-
 import TextNodeComponent from './nodecomponents/TextNodeComponent';
 import ImageNodeComponent from './nodecomponents/ImageNodeComponent';
 import PaletteNodeComponent from './nodecomponents/PaletteNodeComponent';
@@ -78,11 +77,11 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
                     prevTree.map((prevCategory) =>
                       prevCategory.id === category.id
                         ? {
-                          ...prevCategory,
-                          nodes: prevCategory.nodes.map((prevNode) =>
-                            prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
-                          ),
-                        }
+                            ...prevCategory,
+                            nodes: prevCategory.nodes.map((prevNode) =>
+                              prevNode.id === node.id ? { ...prevNode, childNodes } : prevNode
+                            ),
+                          }
                         : prevCategory
                     )
                   );
@@ -108,14 +107,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
     fetchTreeData();
   }, [projectId, space]);
 
-  const constructHierarchy = (node, parent, grandparent) => {
-    return {
-      space,
-      category: grandparent || parent || node,
-      node: parent && !grandparent ? node : null,
-      childNode: grandparent ? node : null,
-    };
-  };
+  const constructHierarchy = (node, parent, grandparent) => ({
+    space,
+    category: grandparent || parent || node,
+    node: parent && !grandparent ? node : null,
+    childNode: grandparent ? node : null,
+  });
 
   const handleNodeClick = (node, parent, grandparent, event) => {
     const hierarchy = constructHierarchy(node, parent, grandparent);
@@ -150,8 +147,9 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
 
   const handleGenerateImagesClick = (node, parent, grandparent) => {
     const hierarchy = constructHierarchy(node, parent, grandparent);
-    onNodeClick(hierarchy); // Notify the parent about the node click
-    onGenerateImages(hierarchy)
+    if (onGenerateImages) {
+      onGenerateImages(hierarchy); // Pass specific hierarchy for image generation
+    }
   };
 
   const toggleCollapse = (id) => {
@@ -189,7 +187,10 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
         <div key={node.id} className="node">
           <div className="node-content">
             <strong>
-              <span className="node-title" onClick={(event) => handleNodeClick(node, parent, grandparent, event)}>
+              <span
+                className="node-title"
+                onClick={(event) => handleNodeClick(node, parent, grandparent, event)}
+              >
                 {node.title}
               </span>
             </strong>
@@ -199,8 +200,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               spaceName={space}
               category={parent}
               node={node}
-              childNode={null} />
-            <button className="explore-button" onClick={() => handleGenerateImagesClick(node, parent, grandparent)}>
+              childNode={null}
+            />
+            <button
+              className="explore-button"
+              onClick={() => handleGenerateImagesClick(node, parent, grandparent)}
+            >
               Generate Images
             </button>
             {renderNodeComponent(node)}
@@ -223,12 +228,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
           <button className="explore-button" onClick={() => handleGenerateImagesClick(category, null, null)}>
             Generate Images
           </button>
-          <NewNodeComponent
-            projectId={projectId}
-            spaceName={space}
-            category={category}
-            node={null}
-            childNode={null} />
+          <NewNodeComponent projectId={projectId} spaceName={space} category={category} node={null} childNode={null} />
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
