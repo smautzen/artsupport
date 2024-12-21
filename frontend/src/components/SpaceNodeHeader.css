@@ -1,0 +1,100 @@
+/* SuggestionHeader.css */
+
+.suggestion-header {
+    display: flex;
+    align-items: stretch; /* Ensure children stretch to match height */
+    justify-content: space-between;
+    width: 100%;
+    border: #7a7a7a 1px solid;
+    border-radius: 5px;
+    background-color: #7498c4;
+    margin-bottom: 10px;
+    position: relative; /* Ensure relative positioning for child elements */
+  }
+  
+  .left-section {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 10px;
+      position: relative;
+      background-color: #5a7dab;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+  }
+  
+  .left-section.material-space {
+    background-color: #b56060; /* Background color for material space */
+  }
+  
+  .left-section:hover {
+    background-color: #9ab9e4; /* Slightly lighter color on hover */
+  }
+  
+  .left-section.material-space:hover {
+    background-color: #d78080; /* Slightly lighter color for material space */
+  }
+  
+  .left-section::after {
+    content: "";
+    position: absolute;
+    top: 0; /* Align with the parent's top */
+    bottom: 0; /* Align with the parent's bottom */
+    right: 0;
+    width: 1px;
+    background-color: #ddd; /* Line color */
+  }
+  
+  .type-text {
+    font-size: 0.9em;
+    color: #edf0f2;
+    margin-right: 5px;
+  }
+  
+  .type-icon img {
+    width: 18px;
+    height: 18px;
+    margin: 0; /* Reset any margin */
+    padding: 0; /* Reset any padding */
+    display: block; /* Prevent inline rendering issues */
+    filter: brightness(0) invert(1); /* Make the icon white */
+  }
+  
+  .middle-section {
+    padding-left: 15px;
+    flex-grow: 1;
+    text-align: left;
+    font-size: 1em;
+    color: #edf0f2;
+    display: flex; /* Ensure flex layout */
+    align-items: center; /* Center vertically */
+    justify-content: flex-start; /* Ensure left alignment of text */
+    font-weight: bold;
+  }
+  
+  .right-section {
+    display: flex;
+    align-items: center;
+    padding-right: 5px;
+  }
+  
+  .highlight-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .highlight-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .highlight-button.liked {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  

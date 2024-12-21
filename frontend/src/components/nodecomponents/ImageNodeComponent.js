@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase-config';
 import OverlayComponent from '../Overlay/OverlayComponent';
+import SpaceNodeHeader from '../SpaceNodeHeader';
 import './ImageNodeComponent.css';
 
-const ImageNodeComponent = ({ node, projectId }) => {
+const ImageNodeComponent = ({ node, projectId, space }) => {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -51,7 +52,11 @@ const ImageNodeComponent = ({ node, projectId }) => {
 
   return (
     <div className="image-node">
-      <h3>Images:</h3>
+      <SpaceNodeHeader
+        title="Images"
+        type="images"
+        space={space}
+      />
       <div className="image-row">
         {images.map((image) => (
           <img

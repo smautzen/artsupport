@@ -3,8 +3,9 @@ import axios from 'axios';
 import { db } from '../../firebase/firebase-config';
 import { doc, onSnapshot } from 'firebase/firestore';
 import './NodeEntitiesComponent.css';
+import SpaceNodeHeader from '../SpaceNodeHeader';
 
-const NodeEntitiesComponent = ({ entityIds, projectId }) => {
+const NodeEntitiesComponent = ({ entityIds, projectId, space }) => {
   const [entities, setEntities] = useState([]);
   const [showLiked, setShowLiked] = useState(true);
   const [showSuggested, setShowSuggested] = useState(false);
@@ -92,6 +93,11 @@ const NodeEntitiesComponent = ({ entityIds, projectId }) => {
               {likedEntities.map((entity) => (
                 <div key={entity.id} className="entity-box">
                   <div className="entity-details">
+                    <SpaceNodeHeader
+                      title={entity.title}
+                      type="entity"
+                      space={space}
+                    />                    
                     <strong><span>{entity.title}</span></strong>
                     <em>{entity.description}</em>
                   </div>

@@ -6,13 +6,11 @@ import NodeEntitiesComponent from './NodeEntitiesComponent';
 const TextNodeComponent = ({ node, projectId, space, categoryId }) => (
   <div className="text-node">
     <p>{node.description}</p>
-    <ImageNodeComponent node={node} projectId={projectId} />
+    <ImageNodeComponent node={node} projectId={projectId} space={space} />
     <NodeEntitiesComponent 
       entityIds={node.entities} 
       projectId={projectId} 
-      space={space} 
-      categoryId={categoryId} 
-      nodeId={node.id} 
+      space={space}
     />
   </div>
 );
