@@ -4,14 +4,15 @@ import { db } from '../../firebase/firebase-config';
 import { doc, onSnapshot } from 'firebase/firestore';
 import './NodeEntitiesComponent.css';
 
-const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId }) => {
+const NodeEntitiesComponent = ({ entityIds, projectId }) => {
   const [entities, setEntities] = useState([]);
+  const [showLiked, setShowLiked] = useState(true);
+  const [showSuggested, setShowSuggested] = useState(true);
 
-  // Fetch entity data based on IDs and subscribe for updates
   useEffect(() => {
     if (!entityIds || !Array.isArray(entityIds) || entityIds.length === 0) {
       console.log('No entities');
-      return; // No entity IDs to fetch
+      return;
     }
 
     console.log('Entities: ', entityIds);
@@ -24,7 +25,7 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
         (snapshot) => {
           if (snapshot.exists()) {
             const updatedEntity = snapshot.data();
-            updatedEntity.id = id; // Ensure the ID is included
+            updatedEntity.id = id;
             setEntities((prev) => {
               const existingIndex = prev.findIndex((entity) => entity.id === updatedEntity.id);
               if (existingIndex !== -1) {
@@ -45,25 +46,19 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
       );
     });
 
-    // Cleanup listeners on component unmount
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [entityIds, projectId]);
 
-  // Separate liked and unliked entities
   const likedEntities = entities.filter((entity) => entity.liked);
   const unlikedEntities = entities.filter((entity) => !entity.liked);
 
-  // Handle like button click
   const handleLikeClick = async (entityId) => {
     try {
       if (!entityId) return;
 
-      const requestBody = {
-        projectId,
-        entityId,
-      };
+      const requestBody = { projectId, entityId };
 
       const response = await axios.post('http://localhost:4000/likeEntity', requestBody);
 
@@ -77,46 +72,65 @@ const NodeEntitiesComponent = ({ entityIds, projectId, space, categoryId, nodeId
     }
   };
 
+  const renderEntityPreview = (entities) =>
+    entities.slice(0, 3).map((entity) => entity.title).join(', ') + (entities.length > 3 ? '...' : '');
+
   return (
     <div className="node-entities">
       {likedEntities.length > 0 && (
-        <>
-          <h3>Liked Entities:</h3>
-          <div className="entity-list">
-            {likedEntities.map((entity) => (
-              <div key={entity.id} className="entity-box">
-                <div className="entity-details">
-                  <strong><span>{entity.title}</span></strong>
-                  <em>{entity.description}</em>
+        <div className="entity-section">
+          <h3 onClick={() => setShowLiked(!showLiked)} className="toggle-header">
+            {showLiked ? '▼' : '▶'} Liked Entities {showLiked ? '' : `(${likedEntities.length})`}
+          </h3>
+          {!showLiked && (
+            <p className="entity-preview">
+              <em>{renderEntityPreview(likedEntities)}</em>
+            </p>
+          )}
+          {showLiked && (
+            <div className="entity-list">
+              {likedEntities.map((entity) => (
+                <div key={entity.id} className="entity-box">
+                  <div className="entity-details">
+                    <strong><span>{entity.title}</span></strong>
+                    <em>{entity.description}</em>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       {unlikedEntities.length > 0 && (
-        <>
-          <strong>
-            <span>Suggested entities for node:</span>
-          </strong>
-          <div className="entity-list">
-            {unlikedEntities.map((entity) => (
-              <div key={entity.id} className="entity-box suggested">
-                <div className="entity-details">
-                  <strong><span>{entity.title}</span></strong>
-                  <em>{entity.description}</em>
+        <div className="entity-section">
+          <h3 onClick={() => setShowSuggested(!showSuggested)} className="toggle-header">
+            {showSuggested ? '▼' : '▶'} Suggested Entities for Node {showSuggested ? '' : `(${unlikedEntities.length})`}
+          </h3>
+          {!showSuggested && (
+            <p className="entity-preview">
+              <em>{renderEntityPreview(unlikedEntities)}</em>
+            </p>
+          )}
+          {showSuggested && (
+            <div className="entity-list">
+              {unlikedEntities.map((entity) => (
+                <div key={entity.id} className="entity-box suggested">
+                  <div className="entity-details">
+                    <strong><span>{entity.title}</span></strong>
+                    <em>{entity.description}</em>
+                  </div>
+                  <button
+                    className="like-button"
+                    onClick={() => handleLikeClick(entity.id)}
+                    disabled={entity.liked}
+                  >
+                    Like
+                  </button>
                 </div>
-                <button
-                  className="like-button"
-                  onClick={() => handleLikeClick(entity.id)}
-                  disabled={entity.liked} // Disable the button if already liked
-                >
-                  Like
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       {entities.length === 0 && <p>No entities available.</p>}
     </div>
