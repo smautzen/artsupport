@@ -63,7 +63,6 @@
 .node-content {
   border: solid 1px black;
   margin-top: 10px;
-  padding: 20px;
   display: block; /* Set display: none; for collapsed state */
   background-color: rgba(255, 255, 255, 0.5);
 }
@@ -74,6 +73,10 @@
   margin-right: 10px; /* Space between icon and title */
   vertical-align: middle; /* Align the icon with text */
   margin-left: 10px;
+}
+
+.text-node {
+  padding: 20px;
 }
 
 @keyframes flash {
