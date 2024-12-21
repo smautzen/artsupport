@@ -1,6 +1,8 @@
 import React from 'react';
 import categoryIcon from '../assets/category.png';
 import textNodeIcon from '../assets/textnode.png';
+import entityIcon from '../assets/entity.png';
+import imageIcon from '../assets/imagenode.png';
 import './SpaceNodeHeader.css';
 
 const SpaceNodeHeader = ({ title, type, space }) => {
@@ -11,6 +13,10 @@ const SpaceNodeHeader = ({ title, type, space }) => {
         return categoryIcon;
       case 'textNode':
         return textNodeIcon;
+      case 'entity':
+        return entityIcon;
+      case 'images':
+        return imageIcon;
       default:
         return categoryIcon; // Fallback icon
     }
@@ -23,6 +29,10 @@ const SpaceNodeHeader = ({ title, type, space }) => {
         return 'Category';
       case 'textNode':
         return 'Node';
+      case 'entity':
+        return 'Entity'
+      case 'images':
+        return 'Images'
       default:
         return 'Unknown';
     }
@@ -60,7 +70,7 @@ const SpaceNodeHeader = ({ title, type, space }) => {
 
       {/* Right Section: Like Button */}
       <div className="right-section">
-        
+
       </div>
     </div>
   );
