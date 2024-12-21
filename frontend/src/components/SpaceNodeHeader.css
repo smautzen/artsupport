@@ -1,6 +1,6 @@
 /* SuggestionHeader.css */
 
-.suggestion-header {
+.node-header {
     display: flex;
     align-items: stretch; /* Ensure children stretch to match height */
     justify-content: space-between;
@@ -10,6 +10,7 @@
     background-color: #7498c4;
     margin-bottom: 10px;
     position: relative; /* Ensure relative positioning for child elements */
+    max-height: 38px;
   }
   
   .left-section {
@@ -71,6 +72,7 @@
     align-items: center; /* Center vertically */
     justify-content: flex-start; /* Ensure left alignment of text */
     font-weight: bold;
+    overflow: hidden;
   }
   
   .right-section {

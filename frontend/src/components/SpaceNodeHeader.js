@@ -44,7 +44,7 @@ const SpaceNodeHeader = ({ title, type, space }) => {
   const leftSectionClass = space === 'material' ? 'left-section material-space' : 'left-section';
 
   return (
-    <div className="suggestion-header">
+    <div className="node-header">
       {/* Left Section: Type and Icon */}
       <div className={leftSectionClass}>
         <div className="type-text">{getTypeText()}</div>
