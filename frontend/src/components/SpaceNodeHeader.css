@@ -100,3 +100,6 @@
     cursor: not-allowed;
   }
   
+  .node-header-title {
+    max-width: 100%;
+  }

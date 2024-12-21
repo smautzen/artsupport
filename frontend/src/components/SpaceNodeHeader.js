@@ -55,7 +55,7 @@ const SpaceNodeHeader = ({ title, type, space }) => {
 
       {/* Middle Section: Title */}
       <div className="middle-section">
-        <span>{title || 'Unnamed Suggestion'}</span>
+        <div className="node-header-title">{title || 'Unnamed Suggestion'}</div>
       </div>
 
       {/* Right Section: Like Button */}
