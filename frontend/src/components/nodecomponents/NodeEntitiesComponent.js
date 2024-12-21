@@ -7,7 +7,7 @@ import './NodeEntitiesComponent.css';
 const NodeEntitiesComponent = ({ entityIds, projectId }) => {
   const [entities, setEntities] = useState([]);
   const [showLiked, setShowLiked] = useState(true);
-  const [showSuggested, setShowSuggested] = useState(true);
+  const [showSuggested, setShowSuggested] = useState(false);
 
   useEffect(() => {
     if (!entityIds || !Array.isArray(entityIds) || entityIds.length === 0) {
