@@ -176,7 +176,7 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
               />
             );
           case 'image':
-            return <ImageNodeComponent node={node} projectId={projectId} space={space}/>;
+            return <ImageNodeComponent node={node} projectId={projectId} space={space} />;
           case 'palette':
             return <PaletteNodeComponent node={node} />;
           default:
@@ -187,19 +187,12 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
       return (
         <div key={node.id} className="node">
           <div className="node-content">
-          <SpaceNodeHeader
-            title={node.title}
-            type="textNode"
-            space={space}
-          />
-            <strong>
-              <span
-                className="node-title"
-                onClick={(event) => handleNodeClick(node, parent, grandparent, event)}
-              >
-                {node.title}
-              </span>
-            </strong>
+            <SpaceNodeHeader
+              title={node.title}
+              type="textNode"
+              space={space}
+              onClick={(event) => handleNodeClick(node, parent, grandparent, event)}
+            />
             <NewNodeComponent
               projectId={projectId}
               spaceName={space}
@@ -230,19 +223,17 @@ const NodeTree = ({ projectId, space, onNodeClick, selectedNodes, onNodeDeselect
             title={category.title}
             type="category"
             space={space}
+            onClick={(event) => handleNodeClick(category, null, null, event)}
           />
         </div>
         {!collapsedItems[category.id] && (
           <div className="category-children">
-            <span className="category-title" onClick={(event) => handleNodeClick(category, null, null, event)}>
-              {category.title}
-            </span>
             <button className="explore-button" onClick={() => handleGenerateImagesClick(category, null, null)}>
               Generate Images
             </button>
             <NewNodeComponent projectId={projectId} spaceName={space} category={category} node={null} childNode={null} />
             <div>{category.description}</div>
-            <ImageNodeComponent node={category} projectId={projectId} space={space}/>
+            <ImageNodeComponent node={category} projectId={projectId} space={space} />
             {renderNodes(category.nodes, category, null)}
           </div>
         )}

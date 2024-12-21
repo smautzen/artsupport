@@ -5,7 +5,7 @@ import entityIcon from '../assets/entity.png';
 import imageIcon from '../assets/imagenode.png';
 import './SpaceNodeHeader.css';
 
-const SpaceNodeHeader = ({ title, type, space }) => {
+const SpaceNodeHeader = ({ title, type, space, onClick }) => {
   // Determine the icon based on the type
   const getIcon = () => {
     switch (type) {
@@ -30,9 +30,9 @@ const SpaceNodeHeader = ({ title, type, space }) => {
       case 'textNode':
         return 'Node';
       case 'entity':
-        return 'Entity'
+        return 'Entity';
       case 'images':
-        return 'Images'
+        return 'Images';
       default:
         return 'Unknown';
     }
@@ -50,6 +50,12 @@ const SpaceNodeHeader = ({ title, type, space }) => {
     }
   };
 
+  // Handle clicking on the node title
+  const handleTitleClick = () => {
+    console.log(`Clicked on node title: ${title || 'Unnamed Suggestion'}`);
+    // Logic to handle the click event can be added here
+  };
+
   // Determine the class for the left section based on space
   const leftSectionClass = space === 'material' ? 'left-section material-space' : 'left-section';
 
@@ -65,13 +71,13 @@ const SpaceNodeHeader = ({ title, type, space }) => {
 
       {/* Middle Section: Title */}
       <div className="middle-section">
-        <div className="node-header-title">{title || 'Unnamed Suggestion'}</div>
+        <div className="node-header-title" onClick={onClick}>
+          {title || 'Unnamed Suggestion'}
+        </div>
       </div>
 
       {/* Right Section: Like Button */}
-      <div className="right-section">
-
-      </div>
+      <div className="right-section"></div>
     </div>
   );
 };
